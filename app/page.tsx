@@ -143,6 +143,35 @@ const getMostViewedItems = (timeRange: string): MostViewedItem[] => {
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28']
 
+const mockMenuViewStats = [
+  {
+    menuName: 'Lunch Menu',
+    topItems: [
+      { name: 'Burger', views: 245, avgTime: '45s' },
+      { name: 'Caesar Salad', views: 190, avgTime: '38s' },
+      { name: 'Fish & Chips', views: 170, avgTime: '42s' },
+      { name: 'Club Sandwich', views: 155, avgTime: '35s' },
+      { name: 'Pasta', views: 140, avgTime: '40s' }
+    ]
+  },
+  {
+    menuName: 'Dinner Menu',
+    topItems: [
+      { name: 'Steak', views: 320, avgTime: '55s' },
+      { name: 'Salmon', views: 280, avgTime: '48s' },
+      { name: 'Chicken', views: 260, avgTime: '45s' },
+      { name: 'Risotto', views: 220, avgTime: '42s' },
+      { name: 'Pasta', views: 200, avgTime: '40s' }
+    ]
+  }
+]
+
+const mockMenuViews = [
+  { name: 'Lunch Menu', views: 2450, percentage: 45 },
+  { name: 'Dinner Menu', views: 1840, percentage: 34 },
+  { name: 'Weekend Brunch', views: 1150, percentage: 21 },
+]
+
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
   in: { opacity: 1, y: 0 },
@@ -657,6 +686,12 @@ const DASHBOARD_WIDGETS: DashboardWidget[] = [
     id: 'device-usage',
     name: 'Device Usage Chart',
     description: 'Shows breakdown of device types used',
+    defaultEnabled: true,
+  },
+  {
+    id: 'menu-views-distribution',
+    name: 'Menu Views Distribution',
+    description: 'Shows the distribution of views across different menus',
     defaultEnabled: true,
   },
 ]
@@ -1475,51 +1510,6 @@ function CreateMenuModal({ isOpen, onClose, onSubmit }: {
   )
 }
 
-function QRCodeModal({ isOpen, onClose, qrCode, setQrCodes }: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  qrCode: any;
-  setQrCodes: React.Dispatch<React.SetStateAction<any[]>>;
-}) {
-  const [qrCodeUrl, setQrCodeUrl] = useState('')
-
-  useEffect(() => {
-    // Generate QR code with subdomain URL format
-    setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${qrCode.restaurant}.menuqr.com/${qrCode.menu.toLowerCase().replace(/\s+/g, '-')}`)
-  }, [qrCode])
-
-  const handleDownload = () => {
-    // In a real application, you would implement the download functionality here
-    console.log('Downloading QR code:', qrCodeUrl)
-  }
-
-  const handleRegenerate = () => {
-    // In a real application, you would regenerate the QR code here
-    console.log('Regenerating QR code for:', qrCode.menu)
-    // Update the QR code in the state
-    setQrCodes(prevQrCodes => prevQrCodes.map(qr => qr.id === qrCode.id ? { ...qr, created: 'Just now' } : qr))
-  }
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>QR  Code for {qrCode.menu}</DialogTitle>
-          <DialogDescription>
-            Scan this QR code to view your menu or share it with your customers.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col items-center space-y-4">
-          <img src={qrCodeUrl} alt={`QR Code for ${qrCode.menu}`} className="w-48 h-48" />
-          <div className="flex space-x-2">
-            <Button onClick={handleDownload}>Download</Button>
-            <Button onClick={handleRegenerate}>Regenerate</Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 function Sidebar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen: boolean; setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>> }) {
   const location = useLocation()
@@ -1916,8 +1906,65 @@ function DashboardContent() {
           )}
         </div>
 
+        {/* Add this new section for menu views distribution */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          {isWidgetEnabled('menu-views-distribution') && (
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle>Menu Views Distribution</CardTitle>
+                <CardDescription>
+                  Percentage of views per menu
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px] w-full flex items-center justify-center">
+                  <div className="h-[250px] w-[250px]">
+                    <Pie
+                      data={{
+                        labels: mockMenuViews.map(menu => menu.name),
+                        datasets: [{
+                          data: mockMenuViews.map(menu => menu.views),
+                          backgroundColor: COLORS,
+                          borderWidth: 0,
+                        }],
+                      }}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            position: 'bottom',
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {mockMenuViews.map((menu, index) => (
+                    <div key={menu.name} className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div 
+                          className="w-3 h-3 mr-2 rounded-sm" 
+                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        />
+                        <span className="text-sm">{menu.name}</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {menu.views.toLocaleString()} views ({menu.percentage}%)
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* You can add another complementary widget here in the remaining 4 columns if needed */}
+        </div>
+
         <Card>
-          <CardHeader>
+              <CardHeader>
             <div>
               <CardTitle>Most Viewed Items</CardTitle>
               <CardDescription>Top 5 items across all menus</CardDescription>
@@ -1944,6 +1991,42 @@ function DashboardContent() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Add this new section after your existing stats and charts */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {mockMenuViewStats.map((menuStat, index) => (
+            <Card key={index}>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  {menuStat.menuName}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    Top 5 Items
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item</TableHead>
+                      <TableHead className="text-right">Views</TableHead>
+                      <TableHead className="text-right">Avg. Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {menuStat.topItems.map((item, itemIndex) => (
+                      <TableRow key={itemIndex}>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell className="text-right">{item.views}</TableCell>
+                        <TableCell className="text-right">{item.avgTime}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         <CreateMenuModal isOpen={isCreateMenuModalOpen} onClose={() => setIsCreateMenuModalOpen(false)} />
       </div>
@@ -2149,16 +2232,42 @@ function QRCodesContent() {
     setIsQRCodeModalOpen(true)
   }
 
-  const handleDownload = (qrCode: QRCode) => {
-    // In a real application, you would implement the download functionality here
-    console.log('Downloading QR code for:', qrCode.menu)
+  const handleDownload = async (qrCode: QRCode) => {
+    // Generate QR code URL
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${qrCode.restaurant}.menuqr.com/${qrCode.menu.toLowerCase().replace(/\s+/g, '-')}`
+    
+    try {
+      // Fetch the QR code image
+      const response = await fetch(qrCodeUrl)
+      const blob = await response.blob()
+      
+      // Create a download link
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = `${qrCode.menu.toLowerCase().replace(/\s+/g, '-')}-qr-code.png`
+      
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Clean up
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (error) {
+      console.error('Error downloading QR code:', error)
+    }
   }
 
   const handleRegenerate = (qrCode: QRCode) => {
-    // In a real application, you would regenerate the QR code here
-    console.log('Regenerating QR code for:', qrCode.menu)
-    // Update the QR code in the state
-    setQrCodes(qrCodes.map(qr => qr.id === qrCode.id ? { ...qr, created: 'Just now' } : qr))
+    // Update the QR code's created timestamp
+    setQrCodes(prevQrCodes => 
+      prevQrCodes.map(qr => 
+        qr.id === qrCode.id 
+          ? { ...qr, created: 'Just now' }
+          : qr
+      )
+    )
   }
 
   return (
@@ -2186,10 +2295,16 @@ function QRCodesContent() {
                     <TableCell>{qrCode.menu}</TableCell>
                     <TableCell>{qrCode.created}</TableCell>
                     <TableCell>{qrCode.scans}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" onClick={() => handleView(qrCode)}>View</Button>
-                      <Button variant="ghost" onClick={() => handleDownload(qrCode)}>Download</Button>
-                      <Button variant="ghost" onClick={() => handleRegenerate(qrCode)}>Regenerate</Button>
+                    <TableCell className="space-x-2">
+                      <Button variant="ghost" onClick={() => handleView(qrCode)}>
+                        View
+                      </Button>
+                      <Button variant="ghost" onClick={() => handleDownload(qrCode)}>
+                        Download
+                      </Button>
+                      <Button variant="ghost" onClick={() => handleRegenerate(qrCode)}>
+                        Regenerate
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -2202,7 +2317,7 @@ function QRCodesContent() {
             isOpen={isQRCodeModalOpen}
             onClose={() => setIsQRCodeModalOpen(false)}
             qrCode={selectedQRCode}
-            setQrCodes={setQrCodes}  // Add this prop
+            setQrCodes={setQrCodes}
           />
         )}
       </div>
@@ -2210,8 +2325,110 @@ function QRCodesContent() {
   )
 }
 
+function QRCodeModal({ isOpen, onClose, qrCode, setQrCodes }: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  qrCode: any;
+  setQrCodes: React.Dispatch<React.SetStateAction<any[]>>;
+}) {
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
+
+  useEffect(() => {
+    // Generate QR code with subdomain URL format
+    setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${qrCode.restaurant}.menuqr.com/${qrCode.menu.toLowerCase().replace(/\s+/g, '-')}`)
+  }, [qrCode])
+
+  const handleDownload = async () => {
+    try {
+      // Fetch the QR code image
+      const response = await fetch(qrCodeUrl)
+      const blob = await response.blob()
+      
+      // Create a download link
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = `${qrCode.menu.toLowerCase().replace(/\s+/g, '-')}-qr-code.png`
+      
+      // Trigger download
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Clean up
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (error) {
+      console.error('Error downloading QR code:', error)
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>QR Code for {qrCode.menu}</DialogTitle>
+          <DialogDescription>
+            Scan this QR code to view your menu or share it with your customers.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col items-center space-y-4">
+          <img src={qrCodeUrl} alt={`QR Code for ${qrCode.menu}`} className="w-48 h-48" />
+          <Button onClick={handleDownload}>Download</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+interface BrandingSettings {
+  primaryColor: string;
+  logo: File | null;
+  logoPreview: string | null;
+  favicon: File | null;
+  faviconPreview: string | null;
+  fontFamily: string;
+  customCss: string;
+  businessPage: {
+    heroImages: Array<{
+      url: string;
+      title: string;
+    }>;
+    backgroundColor: string;
+    textColor: string;
+    showSocialLinks: boolean;
+  };
+  menuSelection: {
+    layout: 'grid' | 'list';
+    showDescriptions: boolean;
+    showImages: boolean;
+    backgroundColor: string;
+  };
+  menuPage: {
+    layout: 'grid' | 'compact';
+    showImages: boolean;
+    showDescriptions: boolean;
+    showAllergies: boolean;
+    showNutrition: boolean;
+    backgroundColor: string;
+  };
+}
+
+const getBackgroundColor = (tab: string, settings: BrandingSettings) => {
+  switch (tab) {
+    case 'business':
+      return settings.businessPage.backgroundColor;
+    case 'menu-selection':
+      return settings.menuSelection.backgroundColor;
+    case 'menu':
+      return settings.menuPage.backgroundColor;
+    default:
+      return '#ffffff';
+  }
+}
+
 function SettingsContent() {
   const [activeTab, setActiveTab] = useState('account')
+  const [brandingSubTab, setBrandingSubTab] = useState('identity')
   const [phone, setPhone] = useState('(555) 555-5555')
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
   const [isDeleteAccountOpen, setIsDeleteAccountOpen] = useState(false)
@@ -2270,13 +2487,62 @@ function SettingsContent() {
     console.log('Canceling subscription')
   }
 
+  const [brandingSettings, setBrandingSettings] = useState<BrandingSettings>({
+    primaryColor: '#adfa1d',
+    logo: null,
+    logoPreview: null,
+    favicon: null,
+    faviconPreview: null,
+    fontFamily: 'Inter',
+    customCss: '',
+    businessPage: {
+      heroImages: [],
+      backgroundColor: '#ffffff',
+      textColor: '#000000',
+      showSocialLinks: true,
+    },
+    menuSelection: {
+      layout: 'grid',
+      showDescriptions: true,
+      showImages: true,
+      backgroundColor: '#ffffff',
+    },
+    menuPage: {
+      layout: 'grid',
+      showImages: true,
+      showDescriptions: true,
+      showAllergies: true,
+      showNutrition: true,
+      backgroundColor: '#ffffff',
+    },
+  })
+
+  const handleFileUpload = (
+    e: React.ChangeEvent<HTMLInputElement>, 
+    type: 'logo' | 'favicon'
+  ) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setBrandingSettings(prev => ({
+          ...prev,
+          [type]: file,
+          [`${type}Preview`]: reader.result as string
+        }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  // In the tab buttons section, add the new Branding tab:
   return (
     <AnimatedPage>
       <div className="space-y-6">
         <h1 className="text-2xl font-semibold">Settings</h1>
         
         <div className="flex space-x-4 border-b">
-          {['Account', 'Business', 'Payment', 'Widgets'].map((tab) => (
+          {['Account', 'Business', 'Payment', 'Branding', 'Widgets'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab.toLowerCase())}
@@ -2469,6 +2735,583 @@ function SettingsContent() {
                 </div>
                 <div className="text-sm text-gray-500">
                   Your next billing date is April 1, 2024
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'branding' && (
+          <div className="space-y-6">
+            <div className="flex space-x-4 border-b">
+              {[
+                { id: 'identity', label: 'Brand Identity' },
+                { id: 'business', label: 'Business Page' },
+                { id: 'menu-selection', label: 'Menu Selection' },
+                { id: 'menu', label: 'Menu Page' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setBrandingSubTab(tab.id)}
+                  className={`pb-2 px-1 ${
+                    brandingSubTab === tab.id
+                      ? 'border-b-2 border-primary font-semibold'
+                      : 'text-gray-500'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {brandingSubTab === 'identity' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Brand Identity</CardTitle>
+                  <CardDescription>
+                    Customize your menu's look and feel
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label>Brand Color</Label>
+                    <div className="flex items-center gap-4">
+                      <Input
+                        type="color"
+                        value={brandingSettings.primaryColor}
+                        onChange={(e) => setBrandingSettings(prev => ({
+                          ...prev,
+                          primaryColor: e.target.value
+                        }))}
+                        className="w-20 h-10"
+                      />
+                      <Input
+                        type="text"
+                        value={brandingSettings.primaryColor}
+                        onChange={(e) => setBrandingSettings(prev => ({
+                          ...prev,
+                          primaryColor: e.target.value
+                        }))}
+                        className="w-32"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Logo</Label>
+                    <div className="flex flex-col gap-4">
+                      {brandingSettings.logoPreview && (
+                        <div className="relative w-48 h-24">
+                          <img
+                            src={brandingSettings.logoPreview}
+                            alt="Logo preview"
+                            className="w-full h-full object-contain"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute top-2 right-2"
+                            onClick={() => setBrandingSettings(prev => ({
+                              ...prev,
+                              logo: null,
+                              logoPreview: null
+                            }))}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, 'logo')}
+                        className={brandingSettings.logoPreview ? 'hidden' : ''}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Recommended size: 400x200px. Max file size: 2MB
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Favicon</Label>
+                    <div className="flex flex-col gap-4">
+                      {brandingSettings.faviconPreview && (
+                        <div className="relative w-16 h-16">
+                          <img
+                            src={brandingSettings.faviconPreview}
+                            alt="Favicon preview"
+                            className="w-full h-full object-contain"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2"
+                            onClick={() => setBrandingSettings(prev => ({
+                              ...prev,
+                              favicon: null,
+                              faviconPreview: null
+                            }))}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, 'favicon')}
+                        className={brandingSettings.faviconPreview ? 'hidden' : ''}
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Recommended size: 32x32px. Max file size: 1MB
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Font Family</Label>
+                    <Select
+                      value={brandingSettings.fontFamily}
+                      onValueChange={(value) => setBrandingSettings(prev => ({
+                        ...prev,
+                        fontFamily: value
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a font" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Inter">Inter</SelectItem>
+                        <SelectItem value="Roboto">Roboto</SelectItem>
+                        <SelectItem value="Open Sans">Open Sans</SelectItem>
+                        <SelectItem value="Lato">Lato</SelectItem>
+                        <SelectItem value="Poppins">Poppins</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Custom CSS</Label>
+                    <Textarea
+                      value={brandingSettings.customCss}
+                      onChange={(e) => setBrandingSettings(prev => ({
+                        ...prev,
+                        customCss: e.target.value
+                      }))}
+                      placeholder=".menu-item { ... }"
+                      className="font-mono h-32"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Advanced: Add custom CSS to further customize your menu's appearance
+                    </p>
+                  </div>
+
+                  <Button onClick={() => console.log('Saving branding settings:', brandingSettings)}>
+                    Save Changes
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {brandingSubTab === 'business' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Business Page</CardTitle>
+                  <CardDescription>
+                    Customize how your business page appears
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Hero Images (up to 3)</Label>
+                      <div className="grid gap-4 mt-2">
+                        {brandingSettings.businessPage.heroImages.map((image, index) => (
+                          <div key={index} className="flex items-center gap-4">
+                            <Input
+                              value={image.url}
+                              onChange={(e) => {
+                                const newImages = [...brandingSettings.businessPage.heroImages]
+                                newImages[index].url = e.target.value
+                                setBrandingSettings(prev => ({
+                                  ...prev,
+                                  businessPage: {
+                                    ...prev.businessPage,
+                                    heroImages: newImages
+                                  }
+                                }))
+                              }}
+                              placeholder="Image URL"
+                            />
+                            <Input
+                              value={image.title}
+                              onChange={(e) => {
+                                const newImages = [...brandingSettings.businessPage.heroImages]
+                                newImages[index].title = e.target.value
+                                setBrandingSettings(prev => ({
+                                  ...prev,
+                                  businessPage: {
+                                    ...prev.businessPage,
+                                    heroImages: newImages
+                                  }
+                                }))
+                              }}
+                              placeholder="Image Title"
+                            />
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              onClick={() => {
+                                const newImages = brandingSettings.businessPage.heroImages.filter((_, i) => i !== index)
+                                setBrandingSettings(prev => ({
+                                  ...prev,
+                                  businessPage: {
+                                    ...prev.businessPage,
+                                    heroImages: newImages
+                                  }
+                                }))
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        {brandingSettings.businessPage.heroImages.length < 3 && (
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setBrandingSettings(prev => ({
+                                ...prev,
+                                businessPage: {
+                                  ...prev.businessPage,
+                                  heroImages: [
+                                    ...prev.businessPage.heroImages,
+                                    { url: '', title: '' }
+                                  ]
+                                }
+                              }))
+                            }}
+                          >
+                            Add Image
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Background Color</Label>
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="color"
+                          value={brandingSettings.businessPage.backgroundColor}
+                          onChange={(e) => setBrandingSettings(prev => ({
+                            ...prev,
+                            businessPage: {
+                              ...prev.businessPage,
+                              backgroundColor: e.target.value
+                            }
+                          }))}
+                          className="w-20 h-10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Text Color</Label>
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="color"
+                          value={brandingSettings.businessPage.textColor}
+                          onChange={(e) => setBrandingSettings(prev => ({
+                            ...prev,
+                            businessPage: {
+                              ...prev.businessPage,
+                              textColor: e.target.value
+                            }
+                          }))}
+                          className="w-20 h-10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="show-social"
+                        checked={brandingSettings.businessPage.showSocialLinks}
+                        onCheckedChange={(checked) => setBrandingSettings(prev => ({
+                          ...prev,
+                          businessPage: {
+                            ...prev.businessPage,
+                            showSocialLinks: checked as boolean
+                          }
+                        }))}
+                      />
+                      <Label htmlFor="show-social">Show Social Media Links</Label>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {brandingSubTab === 'menu-selection' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Menu Selection Page</CardTitle>
+                  <CardDescription>
+                    Customize how your menu selection page appears
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Layout</Label>
+                      <Select
+                        value={brandingSettings.menuSelection.layout}
+                        onValueChange={(value: 'grid' | 'list') => setBrandingSettings(prev => ({
+                          ...prev,
+                          menuSelection: {
+                            ...prev.menuSelection,
+                            layout: value
+                          }
+                        }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select layout" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="grid">Grid</SelectItem>
+                          <SelectItem value="list">List</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="show-menu-descriptions"
+                        checked={brandingSettings.menuSelection.showDescriptions}
+                        onCheckedChange={(checked) => setBrandingSettings(prev => ({
+                          ...prev,
+                          menuSelection: {
+                            ...prev.menuSelection,
+                            showDescriptions: checked as boolean
+                          }
+                        }))}
+                      />
+                      <Label htmlFor="show-menu-descriptions">Show Menu Descriptions</Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="show-menu-images"
+                        checked={brandingSettings.menuSelection.showImages}
+                        onCheckedChange={(checked) => setBrandingSettings(prev => ({
+                          ...prev,
+                          menuSelection: {
+                            ...prev.menuSelection,
+                            showImages: checked as boolean
+                          }
+                        }))}
+                      />
+                      <Label htmlFor="show-menu-images">Show Menu Images</Label>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Background Color</Label>
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="color"
+                          value={brandingSettings.menuSelection.backgroundColor}
+                          onChange={(e) => setBrandingSettings(prev => ({
+                            ...prev,
+                            menuSelection: {
+                              ...prev.menuSelection,
+                              backgroundColor: e.target.value
+                            }
+                          }))}
+                          className="w-20 h-10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {brandingSubTab === 'menu' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Menu Page</CardTitle>
+                  <CardDescription>
+                    Customize how your menu pages appear
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Layout</Label>
+                      <Select
+                        value={brandingSettings.menuPage.layout}
+                        onValueChange={(value: 'grid' | 'compact') => setBrandingSettings(prev => ({
+                          ...prev,
+                          menuPage: {
+                            ...prev.menuPage,
+                            layout: value
+                          }
+                        }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select layout" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="grid">Grid</SelectItem>
+                          <SelectItem value="compact">Compact</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Display Options</Label>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="show-item-images"
+                            checked={brandingSettings.menuPage.showImages}
+                            onCheckedChange={(checked) => setBrandingSettings(prev => ({
+                              ...prev,
+                              menuPage: {
+                                ...prev.menuPage,
+                                showImages: checked as boolean
+                              }
+                            }))}
+                          />
+                          <Label htmlFor="show-item-images">Show Item Images</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="show-item-descriptions"
+                            checked={brandingSettings.menuPage.showDescriptions}
+                            onCheckedChange={(checked) => setBrandingSettings(prev => ({
+                              ...prev,
+                              menuPage: {
+                                ...prev.menuPage,
+                                showDescriptions: checked as boolean
+                              }
+                            }))}
+                          />
+                          <Label htmlFor="show-item-descriptions">Show Item Descriptions</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="show-allergies"
+                            checked={brandingSettings.menuPage.showAllergies}
+                            onCheckedChange={(checked) => setBrandingSettings(prev => ({
+                              ...prev,
+                              menuPage: {
+                                ...prev.menuPage,
+                                showAllergies: checked as boolean
+                              }
+                            }))}
+                          />
+                          <Label htmlFor="show-allergies">Show Allergy Information</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="show-nutrition"
+                            checked={brandingSettings.menuPage.showNutrition}
+                            onCheckedChange={(checked) => setBrandingSettings(prev => ({
+                              ...prev,
+                              menuPage: {
+                                ...prev.menuPage,
+                                showNutrition: checked as boolean
+                              }
+                            }))}
+                          />
+                          <Label htmlFor="show-nutrition">Show Nutritional Information</Label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Background Color</Label>
+                      <div className="flex items-center gap-4">
+                        <Input
+                          type="color"
+                          value={brandingSettings.menuPage.backgroundColor}
+                          onChange={(e) => setBrandingSettings(prev => ({
+                            ...prev,
+                            menuPage: {
+                              ...prev.menuPage,
+                              backgroundColor: e.target.value
+                            }
+                          }))}
+                          className="w-20 h-10"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Preview</CardTitle>
+                <CardDescription>
+                  See how your branding changes will look
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="border rounded-lg p-4"
+                  style={{
+                    fontFamily: brandingSettings.fontFamily,
+                    backgroundColor: getBackgroundColor(brandingSubTab, brandingSettings),
+                    color: brandingSettings.businessPage.textColor
+                  }}
+                >
+                  {brandingSubTab === 'identity' && (
+                    <>
+                      <div className="flex items-center gap-4 mb-4">
+                        {brandingSettings.logoPreview && (
+                          <img
+                            src={brandingSettings.logoPreview}
+                            alt="Logo"
+                            className="h-8 object-contain"
+                          />
+                        )}
+                        <h3 className="text-lg font-semibold">Sample Menu Item</h3>
+                      </div>
+                      <p className="text-gray-600 mb-2">
+                        This is how your menu items will appear to customers
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold" style={{ color: brandingSettings.primaryColor }}>
+                          $12.99
+                        </span>
+                        <Button size="sm" style={{ backgroundColor: brandingSettings.primaryColor }}>
+                          View Details
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                  {brandingSubTab === 'business' && (
+                    <>
+                      {/* Render business page preview */}
+                    </>
+                  )}
+                  {brandingSubTab === 'menu-selection' && (
+                    <>
+                      {/* Render menu selection page preview */}
+                    </>
+                  )}
+                  {brandingSubTab === 'menu' && (
+                    <>
+                      {/* Render menu page preview */}
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
