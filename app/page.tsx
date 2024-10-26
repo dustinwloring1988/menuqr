@@ -31,7 +31,8 @@ const mockMenus = [
     items: 12, 
     lastUpdated: "2 days ago",
     image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=400&fit=crop",
-    description: "Available Monday-Friday, 11am-3pm"
+    description: "Available Monday-Friday, 11am-3pm",
+    isListed: true
   },
   { 
     id: 2, 
@@ -39,7 +40,8 @@ const mockMenus = [
     items: 20, 
     lastUpdated: "1 week ago",
     image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=400&fit=crop",
-    description: "Fine dining experience every evening"
+    description: "Fine dining experience every evening",
+    isListed: true
   },
 ]
 
@@ -2044,13 +2046,19 @@ function MenusContent() {
   }
 
   const handleCreateMenu = (newMenu: any) => {
-    // Add the new menu to the existing menus
     setMenus(prevMenus => [...prevMenus, {
       id: prevMenus.length + 1,
       ...newMenu,
       items: 0,
-      lastUpdated: 'Just now'
+      lastUpdated: 'Just now',
+      isListed: true // New menus are listed by default
     }])
+  }
+
+  const toggleMenuListing = (id: number) => {
+    setMenus(prevMenus => prevMenus.map(menu => 
+      menu.id === id ? { ...menu, isListed: !menu.isListed } : menu
+    ))
   }
 
   return (
@@ -2064,13 +2072,20 @@ function MenusContent() {
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {menus.map(menu => (
-            <Card key={menu.id} className="overflow-hidden">
+            <Card key={menu.id} className={`overflow-hidden ${!menu.isListed ? 'opacity-75' : ''}`}>
               <div className="relative h-48 w-full">
                 <img
                   src={menu.image}
                   alt={menu.name}
                   className="w-full h-full object-cover"
                 />
+                {!menu.isListed && (
+                  <div className="absolute top-2 right-2">
+                    <span className="bg-gray-900/75 text-white px-2 py-1 rounded-md text-sm">
+                      Unlisted
+                    </span>
+                  </div>
+                )}
               </div>
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -2091,6 +2106,10 @@ function MenusContent() {
                       <DropdownMenuItem onClick={() => navigate(`/dashboard/menus/${menu.id}/edit`)}>
                         Edit
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toggleMenuListing(menu.id)}>
+                        {menu.isListed ? 'Unlist Menu' : 'List Menu'}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         className="text-red-600"
                         onClick={() => handleDelete(menu.id)}
@@ -2106,6 +2125,11 @@ function MenusContent() {
                   <div>{menu.items} items</div>
                   <div>Updated {menu.lastUpdated}</div>
                 </div>
+                {!menu.isListed && (
+                  <div className="mt-2 text-sm text-muted-foreground">
+                    This menu is not visible to customers
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
@@ -3447,7 +3471,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
         await new Promise(resolve => setTimeout(resolve, 1000))
         
         if (!menuName) {
-          // If no menu is specified, show available menus with images
+          // If no menu is specified, show only listed menus
           setMenuData({
             restaurantName: restaurantSubdomain?.replace(/-/g, ' '),
             availableMenus: [
@@ -3455,23 +3479,32 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
                 name: 'Lunch Special',
                 description: 'Available Monday-Friday, 11am-3pm',
                 path: 'lunch-special',
-                image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=400&fit=crop'
+                image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=400&fit=crop',
+                isListed: true
               },
               {
                 name: 'Dinner Menu',
                 description: 'Available Daily, 5pm-10pm',
                 path: 'dinner-menu',
-                image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=400&fit=crop'
+                image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=400&fit=crop',
+                isListed: true
               },
               {
                 name: 'Weekend Brunch',
                 description: 'Available Weekends, 9am-2pm',
                 path: 'weekend-brunch',
-                image: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&h=400&fit=crop'
+                image: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&h=400&fit=crop',
+                isListed: true
               }
-            ]
+            ].filter(menu => menu.isListed) // Only show listed menus
           })
         } else {
+          // Only show the menu if it's listed
+          const menu = mockMenus.find(m => m.name.toLowerCase().replace(/\s+/g, '-') === menuName)
+          if (!menu || !menu.isListed) {
+            setError('Menu not found')
+            return
+          }
           // Show specific menu items as before
           setMenuData({
             restaurantName: restaurantSubdomain?.replace(/-/g, ' '),
