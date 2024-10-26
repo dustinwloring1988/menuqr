@@ -160,7 +160,7 @@ const mockMenusByRestaurant = {
       id: '123e4567-e89b-12d3-a456-426614174014',
       name: "Wine & Dessert",
       description: "Evening indulgences",
-      image_url: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&h=400&fit=crop",
+      image_url: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=400&fit=crop",
       is_listed: true,
       start_time: '16:00',
       end_time: '23:00',
@@ -1117,6 +1117,13 @@ function LandingPage() {
             >
               Pricing
             </button>
+            {/* Add this new link */}
+            <Link 
+              to="/business" 
+              className="text-sm font-medium hover:underline underline-offset-4"
+            >
+              Restaurants
+            </Link>
             <Link className="text-sm font-medium hover:underline underline-offset-4" to="/login">
               Login
             </Link>
@@ -1279,6 +1286,25 @@ function LandingPage() {
                     </Button>
                   </CardContent>
                 </Card>
+              </div>
+            </div>
+          </section>
+
+          {/* Add this new section before the footer */}
+          <section className="w-full py-12 md:py-24 bg-white">
+            <div className="container px-4 md:px-6 mx-auto">
+              <div className="flex flex-col items-center space-y-4 text-center">
+                <div className="space-y-2">
+                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
+                    Discover Restaurants
+                  </h2>
+                  <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
+                    Browse our directory of restaurants using digital menus. Find new places to eat and explore their menus before you visit.
+                  </p>
+                </div>
+                <Button size="lg" variant="outline" asChild>
+                  <Link to="/business">View Restaurant Directory</Link>
+                </Button>
               </div>
             </div>
           </section>
@@ -4487,7 +4513,147 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
   )
 }
 
+// Add this new component after the LandingPage component
+function BusinessDirectory() {
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCuisine, setSelectedCuisine] = useState<string>('all')
+  const [isTermsOpen, setIsTermsOpen] = useState(false)
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
 
+  // Get all restaurants from the mock data
+  const restaurants = MOCK_RESTAURANTS.map(restaurant => ({
+    name: restaurant.name,
+    subdomain: restaurant.subdomain,
+    address: restaurant.businessInfo.address,
+    city: restaurant.businessInfo.city,
+    state: restaurant.businessInfo.state,
+    zipcode: restaurant.businessInfo.zipcode,
+    menuCount: mockMenusByRestaurant[restaurant.subdomain as keyof typeof mockMenusByRestaurant]?.length || 0,
+    // You could add more fields like cuisine type, rating, etc.
+  }))
+
+  const filteredRestaurants = restaurants.filter(restaurant => {
+    const matchesSearch = restaurant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      restaurant.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      restaurant.state.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    if (selectedCuisine === 'all') return matchesSearch
+    // Add cuisine type filtering when you have that data
+    return matchesSearch
+  })
+
+  return (
+    <AnimatedPage>
+      <div className="flex flex-col min-h-screen">
+        <header className="px-4 lg:px-6 h-14 flex items-center border-b bg-white">
+          <Link className="flex items-center justify-center" to="/">
+            <QrCode className="h-6 w-6 mr-2" />
+            <span className="font-bold">Menu QRs</span>
+          </Link>
+        </header>
+
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto space-y-8">
+            <div className="text-center space-y-2">
+              <h1 className="text-3xl font-bold">Restaurant Directory</h1>
+              <p className="text-gray-500">
+                Discover restaurants using digital menus
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    placeholder="Search restaurants or locations..."
+                    className="pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Select
+                value={selectedCuisine}
+                onValueChange={setSelectedCuisine}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Cuisine Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Cuisines</SelectItem>
+                  <SelectItem value="american">American</SelectItem>
+                  <SelectItem value="italian">Italian</SelectItem>
+                  <SelectItem value="asian">Asian</SelectItem>
+                  <SelectItem value="mexican">Mexican</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {filteredRestaurants.map((restaurant) => (
+                <Card key={restaurant.subdomain}>
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-lg mb-1">
+                          {restaurant.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {restaurant.address}, {restaurant.city}, {restaurant.state} {restaurant.zipcode}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {restaurant.menuCount} {restaurant.menuCount === 1 ? 'menu' : 'menus'} available
+                        </p>
+                      </div>
+                      <Button asChild>
+                        <Link to={`http://${restaurant.subdomain}.menuqrs.com:3000`} target="_blank">
+                          View Menus
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {filteredRestaurants.length === 0 && (
+                <div className="col-span-2 text-center py-12 text-gray-500">
+                  No restaurants found matching your search criteria
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+
+        <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
+          <p className="text-xs text-gray-500">© 2024 Menu QRs. All rights reserved.</p>
+          <nav className="sm:ml-auto flex gap-4 sm:gap-6">
+            <button
+              className="text-xs hover:underline underline-offset-4 text-gray-500"
+              onClick={() => setIsTermsOpen(true)}
+            >
+              Terms of Service
+            </button>
+            <button
+              className="text-xs hover:underline underline-offset-4 text-gray-500"
+              onClick={() => setIsPrivacyOpen(true)}
+            >
+              Privacy
+            </button>
+          </nav>
+        </footer>
+
+        <TermsOfServiceModal 
+          isOpen={isTermsOpen} 
+          onClose={() => setIsTermsOpen(false)} 
+        />
+        <PrivacyPolicyModal 
+          isOpen={isPrivacyOpen} 
+          onClose={() => setIsPrivacyOpen(false)} 
+        />
+      </div>
+    </AnimatedPage>
+  )
+}
 
 function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
@@ -4594,6 +4760,8 @@ export default function App() {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard/*" element={<Dashboard />} />
+          {/* Add this new route */}
+          <Route path="/business" element={<BusinessDirectory />} />
         </Routes>
       </AnimatePresence>
     </BrowserRouter>
