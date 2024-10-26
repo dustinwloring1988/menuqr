@@ -10,14 +10,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { TableHead, TableRow, TableHeader, TableCell, TableBody, Table } from '@/components/ui/table'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { Chart as ChartJS, ArcElement, Tooltip as ChartTooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
+import { Bar, Pie } from 'react-chartjs-2';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ChevronDown, Menu, Plus, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check } from 'lucide-react'
+import { ChevronDown, Menu, Plus, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check, Clock, Eye, RotateCw, LineChart, Languages, FolderTree, Filter, Search } from 'lucide-react'
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+// Register Chart.js components
+ChartJS.register(ArcElement, ChartTooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 // Mock data for demonstration purposes
 const mockMenus = [
@@ -560,6 +564,103 @@ function PublicPrivacyPolicyModal({ isOpen, onClose }: { isOpen: boolean; onClos
     </Dialog>
   )
 }
+
+// First, add this interface near the top of the file with other interfaces
+interface DashboardWidget {
+  id: string;
+  name: string;
+  description: string;
+  defaultEnabled: boolean;
+}
+
+// Add this constant with the widget definitions
+const DASHBOARD_WIDGETS: DashboardWidget[] = [
+  {
+    id: 'total-menus',
+    name: 'Total Menus',
+    description: 'Shows the total number of menus and recent changes',
+    defaultEnabled: true,
+  },
+  {
+    id: 'active-qr-codes',
+    name: 'Active QR Codes',
+    description: 'Displays the number of active QR codes',
+    defaultEnabled: true,
+  },
+  {
+    id: 'total-views',
+    name: 'Total Views',
+    description: 'Shows total menu views and average view time',
+    defaultEnabled: true,
+  },
+  {
+    id: 'revenue',
+    name: 'Revenue',
+    description: 'Displays revenue statistics',
+    defaultEnabled: true,
+  },
+  {
+    id: 'avg-time',
+    name: 'Average Time on Menu',
+    description: 'Shows how long customers spend viewing menus',
+    defaultEnabled: true,
+  },
+  {
+    id: 'menu-item-views',
+    name: 'Menu Item Views',
+    description: 'Tracks individual menu item popularity',
+    defaultEnabled: true,
+  },
+  {
+    id: 'return-visitors',
+    name: 'Return Visitors',
+    description: 'Shows percentage of returning customers',
+    defaultEnabled: true,
+  },
+  {
+    id: 'peak-hours',
+    name: 'Peak Hours',
+    description: 'Displays busiest hours based on menu views',
+    defaultEnabled: true,
+  },
+  {
+    id: 'language-preferences',
+    name: 'Language Preferences',
+    description: 'Shows menu language usage statistics',
+    defaultEnabled: true,
+  },
+  {
+    id: 'menu-categories',
+    name: 'Menu Categories',
+    description: 'Tracks performance of menu categories',
+    defaultEnabled: true,
+  },
+  {
+    id: 'dietary-filters',
+    name: 'Dietary Filters',
+    description: 'Monitors dietary preference trends',
+    defaultEnabled: true,
+  },
+  {
+    id: 'search-usage',
+    name: 'Search Usage',
+    description: 'Shows how customers use menu search',
+    defaultEnabled: true,
+  },
+  {
+    id: 'views-chart',
+    name: 'Views Over Time Chart',
+    description: 'Displays view trends over time',
+    defaultEnabled: true,
+  },
+  {
+    id: 'device-usage',
+    name: 'Device Usage Chart',
+    description: 'Shows breakdown of device types used',
+    defaultEnabled: true,
+  },
+]
+
 
 function LandingPage() {
   const [isTermsOpen, setIsTermsOpen] = useState(false)
@@ -1544,6 +1645,15 @@ function DashboardContent() {
   const [deviceData, setDeviceData] = useState(getDeviceData(selectedTimeRange))
   const [chartData, setChartData] = useState(getChartData(selectedTimeRange))
   const [mostViewedItems, setMostViewedItems] = useState(getMostViewedItems(selectedTimeRange))
+  const [enabledWidgets, setEnabledWidgets] = useState<string[]>(() => {
+    const savedWidgets = localStorage.getItem('enabledWidgets')
+    if (savedWidgets) {
+      return JSON.parse(savedWidgets)
+    }
+    return DASHBOARD_WIDGETS.filter(widget => widget.defaultEnabled).map(widget => widget.id)
+  })
+
+  const isWidgetEnabled = (widgetId: string) => enabledWidgets.includes(widgetId)
 
   useEffect(() => {
     setDeviceData(getDeviceData(selectedTimeRange))
@@ -1574,140 +1684,236 @@ function DashboardContent() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Total Menus</CardTitle>
-              <Menu className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">5</div>
-              <p className="text-xs text-muted-foreground">+2 from last month</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Active QR Codes</CardTitle>
-              <QrCode className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">+3 from last week</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Total Views</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{timeRangeData[selectedTimeRange as keyof typeof timeRangeData].views}</div>
-              <p className="text-xs text-muted-foreground">
-                Avg. view time: {timeRangeData[selectedTimeRange as keyof typeof timeRangeData].avgViewTime}
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$573.00</div>
-              <p className="text-xs text-muted-foreground">+201 since last month</p>
-            </CardContent>
-          </Card>
+          {isWidgetEnabled('total-menus') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Total Menus</CardTitle>
+                <Menu className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">5</div>
+                <p className="text-xs text-muted-foreground">+2 from last month</p>
+              </CardContent>
+            </Card>
+          )}
+          {isWidgetEnabled('active-qr-codes') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Active QR Codes</CardTitle>
+                <QrCode className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">12</div>
+                <p className="text-xs text-muted-foreground">+3 from last week</p>
+              </CardContent>
+            </Card>
+          )}
+          {isWidgetEnabled('total-views') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Total Views</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{timeRangeData[selectedTimeRange as keyof typeof timeRangeData].views}</div>
+                <p className="text-xs text-muted-foreground">
+                  Avg. view time: {timeRangeData[selectedTimeRange as keyof typeof timeRangeData].avgViewTime}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+          {isWidgetEnabled('revenue') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  className="h-4 w-4 text-muted-foreground"
+                >
+                  <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                </svg>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">$573.00</div>
+                <p className="text-xs text-muted-foreground">+201 since last month</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* New stats */}
+          {isWidgetEnabled('avg-time') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Avg. Time on Menu</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">3m 24s</div>
+                <p className="text-xs text-muted-foreground">+12s from last week</p>
+              </CardContent>
+            </Card>
+          )}
+          {isWidgetEnabled('menu-item-views') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Menu Item Views</CardTitle>
+                <Eye className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">2,847</div>
+                <p className="text-xs text-muted-foreground">+15% vs last period</p>
+              </CardContent>
+            </Card>
+          )}
+          {isWidgetEnabled('return-visitors') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Return Visitors</CardTitle>
+                <RotateCw className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">42%</div>
+                <p className="text-xs text-muted-foreground">+5% from last month</p>
+              </CardContent>
+            </Card>
+          )}
+          {isWidgetEnabled('peak-hours') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Peak Hours</CardTitle>
+                <LineChart className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">12pm - 2pm</div>
+                <p className="text-xs text-muted-foreground">Based on menu views</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {isWidgetEnabled('language-preferences') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Language Preferences</CardTitle>
+                <Languages className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">3 Languages</div>
+                <p className="text-xs text-muted-foreground">English, Spanish, French</p>
+              </CardContent>
+            </Card>
+          )}
+          {isWidgetEnabled('menu-categories') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Menu Categories</CardTitle>
+                <FolderTree className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">8</div>
+                <p className="text-xs text-muted-foreground">Most viewed: Entrees</p>
+              </CardContent>
+            </Card>
+          )}
+          {isWidgetEnabled('dietary-filters') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Dietary Filters</CardTitle>
+                <Filter className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">156</div>
+                <p className="text-xs text-muted-foreground">Dietary preference searches</p>
+              </CardContent>
+            </Card>
+          )}
+          {isWidgetEnabled('search-usage') && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-sm font-medium">Search Usage</CardTitle>
+                <Search className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">24%</div>
+                <p className="text-xs text-muted-foreground">Of visitors use search</p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <Card className="col-span-4">
-            <CardHeader>
-              <CardTitle>Views Over Time</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[350px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <XAxis 
-                      dataKey="name" 
-                      stroke="#888888" 
-                      fontSize={12} 
-                      tickLine={false} 
-                      axisLine={false}
-                      interval={selectedTimeRange === '7d' ? 0 : 'preserveStartEnd'} 
-                    />
-                    <YAxis 
-                      stroke="#888888" 
-                      fontSize={12} 
-                      tickLine={false} 
-                      axisLine={false} 
-                      tickFormatter={(value) => `${value}`} 
-                    />
-                    <Tooltip />
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <Bar 
-                      dataKey="views" 
-                      fill="#adfa1d" 
-                      radius={[4, 4, 0, 0]} 
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          {isWidgetEnabled('views-chart') && (
+            <Card className="col-span-4">
+              <CardHeader>
+                <CardTitle>Views Over Time</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[350px] w-full">
+                  <Bar
+                    data={{
+                      labels: chartData.map(d => d.name),
+                      datasets: [{
+                        label: 'Views',
+                        data: chartData.map(d => d.views),
+                        backgroundColor: '#adfa1d',
+                        borderRadius: 4,
+                      }],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
-          <Card className="col-span-3">
-            <CardHeader>
-              <CardTitle>Device Usage</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[200px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={deviceData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, value }) => `${name}: ${value}%`}
-                    >
-                      {deviceData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={COLORS[index % COLORS.length]} 
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-4">
-                {deviceData.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center mt-2">
-                    <div 
-                      className="w-3 h-3 mr-2 rounded-sm" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className="text-sm">{entry.name}: {entry.value}%</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          {isWidgetEnabled('device-usage') && (
+            <Card className="col-span-3">
+              <CardHeader>
+                <CardTitle>Device Usage</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[200px] w-full">
+                  <Pie
+                    data={{
+                      labels: deviceData.map(d => d.name),
+                      datasets: [{
+                        data: deviceData.map(d => d.value),
+                        backgroundColor: COLORS,
+                      }],
+                    }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                    }}
+                  />
+                </div>
+                <div className="mt-4">
+                  {deviceData.map((entry, index) => (
+                    <div key={entry.name} className="flex items-center mt-2">
+                      <div 
+                        className="w-3 h-3 mr-2 rounded-sm" 
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      />
+                      <span className="text-sm">{entry.name}: {entry.value}%</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <Card>
@@ -2026,6 +2232,24 @@ function SettingsContent() {
     zipcode: '10001',
   })
 
+  const [enabledWidgets, setEnabledWidgets] = useState<string[]>(() => {
+    const savedWidgets = localStorage.getItem('enabledWidgets')
+    if (savedWidgets) {
+      return JSON.parse(savedWidgets)
+    }
+    return DASHBOARD_WIDGETS.filter(widget => widget.defaultEnabled).map(widget => widget.id)
+  })
+
+  const toggleWidget = (widgetId: string) => {
+    setEnabledWidgets(prev => {
+      const newWidgets = prev.includes(widgetId)
+        ? prev.filter(id => id !== widgetId)
+        : [...prev, widgetId]
+      localStorage.setItem('enabledWidgets', JSON.stringify(newWidgets))
+      return newWidgets
+    })
+  }
+
   const handleSavePhone = () => {
     // Here you would typically send a request to your API to update the phone number
     console.log('Saving phone number:', phone)
@@ -2052,7 +2276,7 @@ function SettingsContent() {
         <h1 className="text-2xl font-semibold">Settings</h1>
         
         <div className="flex space-x-4 border-b">
-          {['Account', 'Business', 'Payment'].map((tab) => (
+          {['Account', 'Business', 'Payment', 'Widgets'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab.toLowerCase())}
@@ -2245,6 +2469,46 @@ function SettingsContent() {
                 </div>
                 <div className="text-sm text-gray-500">
                   Your next billing date is April 1, 2024
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'widgets' && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Dashboard Widgets</CardTitle>
+                <CardDescription>
+                  Customize which widgets appear on your dashboard
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {DASHBOARD_WIDGETS.map((widget) => (
+                    <div
+                      key={widget.id}
+                      className="flex items-center space-x-4 p-4 border rounded-lg"
+                    >
+                      <Checkbox
+                        id={widget.id}
+                        checked={enabledWidgets.includes(widget.id)}
+                        onCheckedChange={() => toggleWidget(widget.id)}
+                      />
+                      <div className="flex-1 space-y-1">
+                        <Label
+                          htmlFor={widget.id}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {widget.name}
+                        </Label>
+                        <p className="text-sm text-muted-foreground">
+                          {widget.description}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
