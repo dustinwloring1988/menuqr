@@ -14,7 +14,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Bell, ChevronDown, Menu, Plus, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check } from 'lucide-react'
+import { ChevronDown, Menu, Plus, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check } from 'lucide-react'
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -469,6 +469,98 @@ function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
   )
 }
 
+// Add these new components near the other modal components
+
+function PublicTermsOfServiceModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Terms of Service - Menu Viewing</DialogTitle>
+          <DialogDescription>
+            Last updated: March 2024
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 text-sm">
+          <h3 className="font-semibold">1. Acceptance of Terms</h3>
+          <p>
+            By accessing and viewing this digital menu, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use this service.
+          </p>
+
+          <h3 className="font-semibold">2. Menu Information</h3>
+          <p>
+            While we strive to maintain accurate and up-to-date menu information, prices, availability, and menu items may vary from what is displayed. The restaurant reserves the right to modify menu items and prices without notice.
+          </p>
+
+          <h3 className="font-semibold">3. Allergen Information</h3>
+          <p>
+            Allergen information is provided as a guide only. If you have food allergies or specific dietary requirements, please contact the restaurant staff directly for the most current and accurate information.
+          </p>
+
+          <h3 className="font-semibold">4. Image Usage</h3>
+          <p>
+            The images displayed on this menu are for illustrative purposes only. Actual dishes may vary in appearance from the images shown.
+          </p>
+
+          <h3 className="font-semibold">5. Intellectual Property</h3>
+          <p>
+            All content on this digital menu, including but not limited to images, descriptions, and design elements, is protected by copyright and other intellectual property rights.
+          </p>
+
+          <h3 className="font-semibold">6. Limitation of Liability</h3>
+          <p>
+            We are not responsible for any adverse reactions or experiences related to the consumption of items ordered from this menu. Please use your best judgment when making food choices.
+          </p>
+        </div>
+        <div className="flex justify-end mt-4">
+          <Button onClick={onClose}>Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function PublicPrivacyPolicyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Privacy Policy</DialogTitle>
+          <DialogDescription>
+            Last updated: March 2024
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 text-sm">
+          <h3 className="font-semibold">1. Information We Collect</h3>
+          <p>
+            We collect information that you provide directly to us, including your name, email address, and business information.
+          </p>
+
+          <h3 className="font-semibold">2. How We Use Your Information</h3>
+          <p>
+            We use the information we collect to provide and improve our services, communicate with you, and ensure security of our platform.
+          </p>
+
+          <h3 className="font-semibold">3. Data Security</h3>
+          <p>
+            We implement appropriate technical and organizational measures to protect your personal information.
+          </p>
+
+          <h3 className="font-semibold">4. Your Rights</h3>
+          <p>
+            You have the right to access, correct, or delete your personal information. Contact us to exercise these rights.
+          </p>
+
+          {/* Add more privacy policy sections as needed */}
+        </div>
+        <div className="flex justify-end mt-4">
+          <Button onClick={onClose}>Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function LandingPage() {
   const [isTermsOpen, setIsTermsOpen] = useState(false)
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
@@ -589,7 +681,7 @@ function LandingPage() {
                   </div>
                   <CardContent>
                     <Button className="w-full" asChild>
-                      <Link to="/signup">Get Started</Link>
+                      <Link to="/signup">Start Free Trial</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -1086,16 +1178,7 @@ function Login() {
                 />
               </div>
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <button
-                    type="button"
-                    onClick={() => setIsForgotPasswordOpen(true)}
-                    className="text-sm text-primary hover:underline"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
+                <Label htmlFor="password">Password</Label>
                 <Input
                   id="password"
                   required
@@ -1108,11 +1191,22 @@ function Login() {
                 Login
               </Button>
             </form>
-            <div className="mt-4 text-center text-sm">
-              Don't have an account?{' '}
-              <Link className="text-primary hover:underline" to="/signup">
-                Sign Up
-              </Link>
+            <div className="mt-4 text-center space-y-2">
+              <div>
+                Don't have an account?{' '}
+                <Link className="text-primary hover:underline" to="/signup">
+                  Sign Up
+                </Link>
+              </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setIsForgotPasswordOpen(true)}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -1328,6 +1422,7 @@ function QRCodeModal({ isOpen, onClose, qrCode, setQrCodes }: {
 
 function Sidebar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen: boolean; setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>> }) {
   const location = useLocation()
+  const navigate = useNavigate()
 
   const isActive = (path: string): boolean => location.pathname === path
 
@@ -1369,13 +1464,32 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen: boolean; 
               QR Codes
             </Link>
           </Button>
-          <Button variant={isActive('/dashboard/settings') ? 'secondary' : 'ghost'} className="w-full justify-start" asChild>
-            <Link to="/dashboard/settings">
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </Link>
-          </Button>
         </nav>
+        <div className="p-4 border-t hidden lg:block">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="w-full justify-start">
+                <Avatar className="h-8 w-8 mr-2">
+                  <AvatarImage src="/placeholder-avatar.jpg" alt="User avatar" />
+                  <AvatarFallback>JD</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col items-start">
+                  <span className="text-sm font-medium">John Doe</span>
+                  <span className="text-xs text-muted-foreground">john@example.com</span>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuItem onClick={() => navigate('/dashboard/settings')}>
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/')}>
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </motion.aside>
   )
@@ -1392,11 +1506,7 @@ function Header({ setIsSidebarOpen }: { setIsSidebarOpen: (open: boolean) => voi
           <span className="sr-only">Open sidebar</span>
         </Button>
       </div>
-      <div className="flex items-center space-x-4">
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
-          <span className="sr-only">View notifications</span>
-        </Button>
+      <div className="flex items-center space-x-4 lg:hidden">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -1410,14 +1520,11 @@ function Header({ setIsSidebarOpen }: { setIsSidebarOpen: (open: boolean) => voi
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">John Doe</p>
-                <p className="text-xs leading-none  text-muted-foreground">john@example.com</p>
+                <p className="text-xs leading-none text-muted-foreground">john@example.com</p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/dashboard/settings')}>
               Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -1527,63 +1634,75 @@ function DashboardContent() {
             <CardHeader>
               <CardTitle>Views Over Time</CardTitle>
             </CardHeader>
-            <CardContent className="pl-2">
-              <ResponsiveContainer width="100%" height={350}>
-                <BarChart data={chartData}>
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#888888" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false}
-                    interval={selectedTimeRange === '7d' ? 0 : 'preserveStartEnd'} 
-                  />
-                  <YAxis 
-                    stroke="#888888" 
-                    fontSize={12} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    tickFormatter={(value) => `${value}`} 
-                  />
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <Bar dataKey="views" fill="#adfa1d" radius={[4, 4, 0, 0]} />
-                  <Tooltip />
-                </BarChart>
-              </ResponsiveContainer>
+            <CardContent>
+              <div className="h-[350px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="#888888" 
+                      fontSize={12} 
+                      tickLine={false} 
+                      axisLine={false}
+                      interval={selectedTimeRange === '7d' ? 0 : 'preserveStartEnd'} 
+                    />
+                    <YAxis 
+                      stroke="#888888" 
+                      fontSize={12} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tickFormatter={(value) => `${value}`} 
+                    />
+                    <Tooltip />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <Bar 
+                      dataKey="views" 
+                      fill="#adfa1d" 
+                      radius={[4, 4, 0, 0]} 
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
+          
           <Card className="col-span-3">
             <CardHeader>
               <CardTitle>Device Usage</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={deviceData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}%`}
-                  >
-                    {deviceData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={deviceData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}%`}
+                    >
+                      {deviceData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={COLORS[index % COLORS.length]} 
+                        />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
               <div className="mt-4">
                 {deviceData.map((entry, index) => (
-                  <div key={entry.name} className="flex items-center">
+                  <div key={entry.name} className="flex items-center mt-2">
                     <div 
-                      className="w-3 h-3 mr-2" 
+                      className="w-3 h-3 mr-2 rounded-sm" 
                       style={{ backgroundColor: COLORS[index % COLORS.length] }}
                     />
-                    <span>{entry.name}: {entry.value}%</span>
+                    <span className="text-sm">{entry.name}: {entry.value}%</span>
                   </div>
                 ))}
               </div>
@@ -2209,6 +2328,8 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
   const [error, setError] = useState<string | null>(null)
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
   const [isItemModalOpen, setIsItemModalOpen] = useState(false)
+  const [isTermsOpen, setIsTermsOpen] = useState(false)
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -2301,146 +2422,204 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
     )
   }
 
-  // Update the menu selection view to include images
+  // Update the menu selection view to include footer
   if (!menuName && menuData?.availableMenus) {
     return (
       <AnimatedPage>
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold mb-2 capitalize">{menuData.restaurantName}</h1>
-          <h2 className="text-xl text-gray-600 mb-6">Available Menus</h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {menuData.availableMenus.map((menu: any, index: number) => (
-              <Card 
-                key={index} 
-                className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
-                onClick={() => navigate(`/${menu.path}`)}
-              >
-                <div className="relative h-48 w-full">
-                  <img
-                    src={menu.image}
-                    alt={menu.name}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-lg font-semibold">{menu.name}</h3>
+        <div className="flex flex-col min-h-screen">
+          <div className="container mx-auto px-4 py-8 flex-grow">
+            <h1 className="text-3xl font-bold mb-2 capitalize">{menuData.restaurantName}</h1>
+            <h2 className="text-xl text-gray-600 mb-6">Available Menus</h2>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {menuData.availableMenus.map((menu: any, index: number) => (
+                <Card 
+                  key={index} 
+                  className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
+                  onClick={() => navigate(`/${menu.path}`)}
+                >
+                  <div className="relative h-48 w-full">
+                    <img
+                      src={menu.image}
+                      alt={menu.name}
+                      className="w-full h-full object-cover"
+                    />
                   </div>
-                  <p className="text-gray-600">{menu.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-lg font-semibold">{menu.name}</h3>
+                    </div>
+                    <p className="text-gray-600">{menu.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
+          <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
+            <p className="text-xs text-gray-500">© 2024 Menu QRs. All rights reserved.</p>
+            <nav className="sm:ml-auto flex gap-4 sm:gap-6">
+              <button
+                className="text-xs hover:underline underline-offset-4 text-gray-500"
+                onClick={() => setIsTermsOpen(true)}
+              >
+                Terms of Service
+              </button>
+              <button
+                className="text-xs hover:underline underline-offset-4 text-gray-500"
+                onClick={() => setIsPrivacyOpen(true)}
+              >
+                Privacy
+              </button>
+            </nav>
+          </footer>
         </div>
+
+        <PublicTermsOfServiceModal 
+          isOpen={isTermsOpen} 
+          onClose={() => setIsTermsOpen(false)} 
+        />
+        <PublicPrivacyPolicyModal 
+          isOpen={isPrivacyOpen} 
+          onClose={() => setIsPrivacyOpen(false)} 
+        />
       </AnimatedPage>
     )
   }
 
   return (
     <AnimatedPage>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-2 capitalize">{menuData?.restaurantName}</h1>
-        <h2 className="text-xl text-gray-600 mb-6 capitalize">{menuData?.menuName}</h2>
-        <div className="grid gap-6 md:grid-cols-2">
-          {menuData?.items?.map((item: MenuItem, index: number) => (
-            <Card 
-              key={index} 
-              className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
-              onClick={() => handleItemClick(item)}
-            >
-              <CardContent className="p-4">
-                <div className="flex gap-4">
-                  {item.image ? (
-                    <div className="w-24 h-24 flex-shrink-0">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover rounded-md"
-                      />
+      <div className="flex flex-col min-h-screen">
+        <div className="container mx-auto px-4 py-8 flex-grow">
+          <h1 className="text-3xl font-bold mb-2 capitalize">{menuData?.restaurantName}</h1>
+          <h2 className="text-xl text-gray-600 mb-6 capitalize">{menuData?.menuName}</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            {menuData?.items?.map((item: MenuItem, index: number) => (
+              <Card 
+                key={index} 
+                className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
+                onClick={() => handleItemClick(item)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex gap-4">
+                    {item.image ? (
+                      <div className="w-24 h-24 flex-shrink-0">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-24 h-24 bg-gray-100 flex items-center justify-center rounded-md flex-shrink-0">
+                        <span className="text-gray-400 text-sm">No image</span>
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="text-lg font-semibold">{item.name}</h3>
+                        <span className="text-lg">{item.price}</span>
+                      </div>
+                      <p className="text-gray-600 line-clamp-2">{item.description}</p>
                     </div>
-                  ) : (
-                    <div className="w-24 h-24 bg-gray-100 flex items-center justify-center rounded-md flex-shrink-0">
-                      <span className="text-gray-400 text-sm">No image</span>
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-lg font-semibold">{item.name}</h3>
-                      <span className="text-lg">{item.price}</span>
-                    </div>
-                    <p className="text-gray-600 line-clamp-2">{item.description}</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {menuData?.items?.length === 0 && (
-            <div className="text-center text-gray-500 col-span-2">
-              No items available in this menu
-            </div>
-          )}
+                </CardContent>
+              </Card>
+            ))}
+            {menuData?.items?.length === 0 && (
+              <div className="text-center text-gray-500 col-span-2">
+                No items available in this menu
+              </div>
+            )}
+          </div>
+
+          <Dialog open={isItemModalOpen} onOpenChange={setIsItemModalOpen}>
+            <DialogContent className="sm:max-w-[600px]">
+              {selectedItem && (
+                <>
+                  <DialogHeader>
+                    <DialogTitle className="flex justify-between items-center">
+                      {selectedItem.name}
+                      <span className="text-xl font-bold">{selectedItem.price}</span>
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4">
+                    {selectedItem.image && (
+                      <div className="w-full h-48 relative">
+                        <img
+                          src={selectedItem.image}
+                          alt={selectedItem.name}
+                          className="w-full h-full object-cover rounded-md"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="font-semibold mb-2">Description</h4>
+                      <p className="text-gray-600">{selectedItem.description}</p>
+                    </div>
+                    {selectedItem.ingredients && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Ingredients</h4>
+                        <p className="text-gray-600">{selectedItem.ingredients.join(', ')}</p>
+                      </div>
+                    )}
+                    {selectedItem.allergens && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Allergens</h4>
+                        <div className="flex gap-2">
+                          {selectedItem.allergens.map((allergen, index) => (
+                            <span
+                              key={index}
+                              className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-sm"
+                            >
+                              {allergen}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {selectedItem.calories && (
+                      <div>
+                        <h4 className="font-semibold mb-2">Nutritional Information</h4>
+                        <p className="text-gray-600">{selectedItem.calories} calories</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </DialogContent>
+          </Dialog>
         </div>
 
-        <Dialog open={isItemModalOpen} onOpenChange={setIsItemModalOpen}>
-          <DialogContent className="sm:max-w-[600px]">
-            {selectedItem && (
-              <>
-                <DialogHeader>
-                  <DialogTitle className="flex justify-between items-center">
-                    {selectedItem.name}
-                    <span className="text-xl font-bold">{selectedItem.price}</span>
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4">
-                  {selectedItem.image && (
-                    <div className="w-full h-48 relative">
-                      <img
-                        src={selectedItem.image}
-                        alt={selectedItem.name}
-                        className="w-full h-full object-cover rounded-md"
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <h4 className="font-semibold mb-2">Description</h4>
-                    <p className="text-gray-600">{selectedItem.description}</p>
-                  </div>
-                  {selectedItem.ingredients && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Ingredients</h4>
-                      <p className="text-gray-600">{selectedItem.ingredients.join(', ')}</p>
-                    </div>
-                  )}
-                  {selectedItem.allergens && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Allergens</h4>
-                      <div className="flex gap-2">
-                        {selectedItem.allergens.map((allergen, index) => (
-                          <span
-                            key={index}
-                            className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-sm"
-                          >
-                            {allergen}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {selectedItem.calories && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Nutritional Information</h4>
-                      <p className="text-gray-600">{selectedItem.calories} calories</p>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </DialogContent>
-        </Dialog>
+        <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
+          <p className="text-xs text-gray-500">© 2024 Menu QRs. All rights reserved.</p>
+          <nav className="sm:ml-auto flex gap-4 sm:gap-6">
+            <button
+              className="text-xs hover:underline underline-offset-4 text-gray-500"
+              onClick={() => setIsTermsOpen(true)}
+            >
+              Terms of Service
+            </button>
+            <button
+              className="text-xs hover:underline underline-offset-4 text-gray-500"
+              onClick={() => setIsPrivacyOpen(true)}
+            >
+              Privacy
+            </button>
+          </nav>
+        </footer>
+
+        <PublicTermsOfServiceModal 
+          isOpen={isTermsOpen} 
+          onClose={() => setIsTermsOpen(false)} 
+        />
+        <PublicPrivacyPolicyModal 
+          isOpen={isPrivacyOpen} 
+          onClose={() => setIsPrivacyOpen(false)} 
+        />
       </div>
     </AnimatedPage>
   )
 }
+
 
 
 function Dashboard() {
