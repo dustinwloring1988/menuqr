@@ -24,30 +24,398 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 ChartJS.register(ArcElement, ChartTooltip, Legend, CategoryScale, LinearScale, BarElement);
 
 // Mock data for demonstration purposes
-const mockMenus = [
-  { 
-    id: 1, 
-    name: "Lunch Special", 
-    items: 12, 
-    lastUpdated: "2 days ago",
-    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=400&fit=crop",
-    description: "Available Monday-Friday, 11am-3pm",
-    isListed: true
-  },
-  { 
-    id: 2, 
-    name: "Dinner Menu", 
-    items: 20, 
-    lastUpdated: "1 week ago",
-    image: "https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=400&fit=crop",
-    description: "Fine dining experience every evening",
-    isListed: true
-  },
-]
+const mockMenusByRestaurant = {
+  'joes-diner': [
+    { 
+      id: '123e4567-e89b-12d3-a456-426614174000',
+      name: "Breakfast Menu", 
+      description: "Available daily, 7am-11am",
+      image_url: "https://images.unsplash.com/photo-1533089860892-a7c6f0a8866?w=800&h=400&fit=crop",
+      is_listed: true,
+      start_time: '07:00',
+      end_time: '11:00',
+      available_days: [1, 2, 3, 4, 5, 6, 7],
+      layout: 'grid',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174002',
+          name: 'Classic Breakfasts',
+          description: 'Traditional morning favorites',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174003',
+              name: 'Classic American Breakfast',
+              description: 'Two eggs any style, bacon or sausage, hash browns, and toast',
+              price: '12.99',
+              image_url: 'https://images.unsplash.com/photo-1550367363-ea12860cc124?w=300',
+              ingredients: ['Eggs', 'Bacon', 'Hash Browns', 'Toast'],
+              allergens: ['Eggs', 'Gluten'],
+              calories: 850,
+              display_order: 1,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    },
+    { 
+      id: '123e4567-e89b-12d3-a456-426614174005',
+      name: "Lunch Special", 
+      description: "Available Monday-Friday, 11am-3pm",
+      image_url: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=400&fit=crop",
+      is_listed: true,
+      start_time: '11:00',
+      end_time: '15:00',
+      available_days: [1, 2, 3, 4, 5],
+      layout: 'list',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174006',
+          name: 'Sandwiches',
+          description: 'Fresh and hearty sandwiches',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174007',
+              name: 'Classic Club Sandwich',
+              description: 'Triple-decker with turkey, bacon, lettuce, and tomato',
+              price: '14.99',
+              image_url: 'https://images.unsplash.com/photo-1567234669003-dce7a7a88821?w=300',
+              ingredients: ['Turkey', 'Bacon', 'Lettuce', 'Tomato', 'Mayo'],
+              allergens: ['Gluten'],
+              calories: 750,
+              display_order: 1,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  'pizza-place': [
+    {
+      id: '123e4567-e89b-12d3-a456-426614174008',
+      name: "Pizza Menu",
+      description: "Our signature pizzas",
+      image_url: "https://images.unsplash.com/photo-1513104890138-7c749659a591?w=800&h=400&fit=crop",
+      is_listed: true,
+      layout: 'grid',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174009',
+          name: 'Classic Pizzas',
+          description: 'Traditional favorites',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174010',
+              name: 'Margherita Pizza',
+              description: 'Fresh tomatoes, mozzarella, and basil',
+              price: '16.99',
+              image_url: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=300',
+              ingredients: ['Tomato Sauce', 'Mozzarella', 'Fresh Basil'],
+              allergens: ['Dairy', 'Gluten'],
+              calories: 800,
+              display_order: 1,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  'cafe-bistro': [
+    {
+      id: '123e4567-e89b-12d3-a456-426614174011',
+      name: "All Day Menu",
+      description: "Fresh, seasonal cuisine",
+      image_url: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&h=400&fit=crop",
+      is_listed: true,
+      layout: 'grid',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174012',
+          name: 'Starters',
+          description: 'Light bites and appetizers',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174013',
+              name: 'French Onion Soup',
+              description: 'Classic soup with melted gruyere',
+              price: '9.99',
+              image_url: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=300',
+              ingredients: ['Onions', 'Beef Broth', 'Gruyere Cheese', 'Bread'],
+              allergens: ['Dairy', 'Gluten'],
+              calories: 400,
+              display_order: 1,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: '123e4567-e89b-12d3-a456-426614174014',
+      name: "Wine & Dessert",
+      description: "Evening indulgences",
+      image_url: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&h=400&fit=crop",
+      is_listed: true,
+      start_time: '16:00',
+      end_time: '23:00',
+      layout: 'list',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174015',
+          name: 'Desserts',
+          description: 'Sweet endings',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174016',
+              name: 'Crème Brûlée',
+              description: 'Classic French vanilla custard with caramelized sugar',
+              price: '8.99',
+              image_url: 'https://images.unsplash.com/photo-1470124182917-cc6e71b22ecc?w=300',
+              ingredients: ['Cream', 'Vanilla', 'Sugar', 'Eggs'],
+              allergens: ['Dairy', 'Eggs'],
+              calories: 650,
+              display_order: 1,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  'downtown-pub': [
+    {
+      id: '123e4567-e89b-12d3-a456-426614174017',
+      name: "Bar Menu",
+      description: "Classic pub fare and appetizers",
+      image_url: "https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=800&h=400&fit=crop",
+      is_listed: true,
+      layout: 'grid',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174018',
+          name: 'Bar Bites',
+          description: 'Perfect with your favorite drink',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174019',
+              name: 'Loaded Nachos',
+              description: 'Tortilla chips topped with melted cheese, jalapeños, guacamole, and sour cream',
+              price: '13.99',
+              image_url: 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=300',
+              ingredients: ['Tortilla Chips', 'Cheese', 'Jalapeños', 'Guacamole', 'Sour Cream'],
+              allergens: ['Dairy'],
+              calories: 950,
+              display_order: 1,
+              is_available: true
+            },
+            {
+              id: '123e4567-e89b-12d3-a456-426614174020',
+              name: 'Wings Basket',
+              description: 'Choose from Buffalo, BBQ, or Garlic Parmesan',
+              price: '15.99',
+              image_url: 'https://images.unsplash.com/photo-1524114664604-cd8133cd67ad?w=300',
+              ingredients: ['Chicken Wings', 'Choice of Sauce', 'Celery', 'Ranch Dressing'],
+              allergens: ['Dairy'],
+              calories: 850,
+              display_order: 2,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: '123e4567-e89b-12d3-a456-426614174021',
+      name: "Drinks Menu",
+      description: "Craft beers, cocktails, and spirits",
+      image_url: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=800&h=400&fit=crop",
+      is_listed: true,
+      layout: 'list',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174022',
+          name: 'Craft Cocktails',
+          description: 'Handcrafted signature drinks',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174023',
+              name: 'Old Fashioned',
+              description: 'Bourbon, bitters, sugar, and orange peel',
+              price: '12.99',
+              image_url: 'https://images.unsplash.com/photo-1551751299-1b51cab2694c?w=300',
+              ingredients: ['Bourbon', 'Angostura Bitters', 'Sugar Cube', 'Orange Peel'],
+              calories: 180,
+              display_order: 1,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+
+  'family-diner': [
+    {
+      id: '123e4567-e89b-12d3-a456-426614174024',
+      name: "All-Day Breakfast",
+      description: "Breakfast served 24/7",
+      image_url: "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&h=400&fit=crop",
+      is_listed: true,
+      layout: 'grid',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174025',
+          name: 'Grand Slams',
+          description: 'Our famous breakfast combinations',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174026',
+              name: 'Original Grand Slam',
+              description: 'Two buttermilk pancakes, two eggs, two bacon strips, and two sausage links',
+              price: '13.99',
+              image_url: 'https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=300',
+              ingredients: ['Pancakes', 'Eggs', 'Bacon', 'Sausage'],
+              allergens: ['Eggs', 'Dairy', 'Gluten'],
+              calories: 1050,
+              display_order: 1,
+              is_available: true
+            },
+            {
+              id: '123e4567-e89b-12d3-a456-426614174027',
+              name: 'Fit Slam',
+              description: 'Egg whites, turkey bacon, whole wheat toast, and fresh fruit',
+              price: '12.99',
+              image_url: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=300',
+              ingredients: ['Egg Whites', 'Turkey Bacon', 'Whole Wheat Toast', 'Fresh Fruit'],
+              allergens: ['Eggs', 'Gluten'],
+              calories: 450,
+              display_order: 2,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: '123e4567-e89b-12d3-a456-426614174028',
+      name: "Lunch & Dinner",
+      description: "Classic American comfort food",
+      image_url: "https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=800&h=400&fit=crop",
+      is_listed: true,
+      layout: 'grid',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174029',
+          name: 'Burgers & Melts',
+          description: 'Served with crispy fries',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174030',
+              name: 'Super Bird',
+              description: 'Turkey, Swiss cheese, and tomato on grilled sourdough',
+              price: '11.99',
+              image_url: 'https://images.unsplash.com/photo-1553909489-cd47e0907980?w=300',
+              ingredients: ['Turkey', 'Swiss Cheese', 'Tomato', 'Sourdough Bread'],
+              allergens: ['Dairy', 'Gluten'],
+              calories: 780,
+              display_order: 1,
+              is_available: true
+            }
+          ]
+        },
+        {
+          id: '123e4567-e89b-12d3-a456-426614174031',
+          name: 'Value Menu',
+          description: 'Great food at great prices',
+          display_order: 2,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174032',
+              name: '55-Plus Grilled Cheese',
+              description: 'Classic grilled cheese with tomato soup',
+              price: '8.99',
+              image_url: 'https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=300',
+              ingredients: ['American Cheese', 'White Bread', 'Tomato Soup'],
+              allergens: ['Dairy', 'Gluten'],
+              calories: 550,
+              display_order: 1,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: '123e4567-e89b-12d3-a456-426614174033',
+      name: "Kids Menu",
+      description: "For our younger guests",
+      image_url: "https://images.unsplash.com/photo-1574484284002-952d92456975?w=800&h=400&fit=crop",
+      is_listed: true,
+      layout: 'grid',
+      categories: [
+        {
+          id: '123e4567-e89b-12d3-a456-426614174034',
+          name: 'Jr. Menu',
+          description: 'All items come with a small drink',
+          display_order: 1,
+          items: [
+            {
+              id: '123e4567-e89b-12d3-a456-426614174035',
+              name: 'Jr. Pancakes',
+              description: 'Three silver dollar pancakes with syrup',
+              price: '6.99',
+              image_url: 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?w=300',
+              ingredients: ['Pancake Batter', 'Syrup', 'Butter'],
+              allergens: ['Dairy', 'Gluten'],
+              calories: 350,
+              display_order: 1,
+              is_available: true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
 
 const mockQRCodes = [
-  { id: 1, menu: "Lunch Special", restaurant: "joes-diner", created: "3 days ago", scans: 45 },
-  { id: 2, menu: "Dinner Menu", restaurant: "joes-diner", created: "1 week ago", scans: 102 },
+  {
+    id: '123e4567-e89b-12d3-a456-426614174004',
+    menu_id: '123e4567-e89b-12d3-a456-426614174000',
+    created_at: '2024-03-01T12:00:00Z',
+    last_regenerated_at: '2024-03-01T12:00:00Z',
+    menu: { // Join with menus table
+      name: "Lunch Special",
+      organization: { // Join with organizations table
+        subdomain: "joes-diner"
+      }
+    },
+    views: 45 // Calculated from menu_views table
+  },
+  {
+    id: '123e4567-e89b-12d3-a456-426614174008',
+    menu_id: '123e4567-e89b-12d3-a456-426614174005',
+    created_at: '2024-03-01T12:00:00Z',
+    last_regenerated_at: '2024-03-01T12:00:00Z',
+    menu: { // Join with menus table
+      name: "Dinner Menu",
+      organization: { // Join with organizations table
+        subdomain: "joes-diner"
+      }
+    },
+    views: 102 // Calculated from menu_views table
+  },
 ]
 
 interface DeviceDataEntry {
@@ -169,9 +537,33 @@ const mockMenuViewStats = [
 ]
 
 const mockMenuViews = [
-  { name: 'Lunch Menu', views: 2450, percentage: 45 },
-  { name: 'Dinner Menu', views: 1840, percentage: 34 },
-  { name: 'Weekend Brunch', views: 1150, percentage: 21 },
+  {
+    menu_id: '123e4567-e89b-12d3-a456-426614174000',
+    menu: {
+      name: 'Lunch Menu'
+    },
+    view_count: 2450,
+    percentage: 45,
+    created_at: '2024-03-01T12:00:00Z'
+  },
+  {
+    menu_id: '123e4567-e89b-12d3-a456-426614174005',
+    menu: {
+      name: 'Dinner Menu'
+    },
+    view_count: 1840,
+    percentage: 34,
+    created_at: '2024-03-01T12:00:00Z'
+  },
+  {
+    menu_id: '123e4567-e89b-12d3-a456-426614174009',
+    menu: {
+      name: 'Weekend Brunch'
+    },
+    view_count: 1150,
+    percentage: 21,
+    created_at: '2024-03-01T12:00:00Z'
+  },
 ]
 
 const pageVariants = {
@@ -445,7 +837,7 @@ function ContactModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
               <Label htmlFor="employees">Number of Locations</Label>
               <Select 
                 value={formData.employees} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, employees: value }))}
+                onValueChange={(value: string) => setFormData(prev => ({ ...prev, employees: value }))}
                 disabled={status === 'loading' || status === 'success'}
               >
                 <SelectTrigger>
@@ -1280,18 +1672,236 @@ function SignUp() {
   )
 }
 
+// Add this interface and mock data near the top with other interfaces/mock data
+interface Restaurant {
+  subdomain: string;
+  name: string;
+  credentials: {
+    email: string;
+    password: string;
+  };
+  businessInfo: {
+    phone: string;
+    address: string;
+    city: string;
+    state: string;
+    zipcode: string;
+    hours: {
+      [key: string]: {
+        open: string;
+        close: string;
+        isOpen: boolean;
+      };
+    };
+  };
+  tier: 'starter' | 'professional' | 'enterprise';
+  enabledWidgets: string[];
+}
+
+const MOCK_RESTAURANTS: Restaurant[] = [
+  {
+    subdomain: 'joes-diner',
+    name: "Joe's Diner",
+    credentials: {
+      email: 'joe@joes-diner.com',
+      password: 'Password123!'
+    },
+    businessInfo: {
+      phone: '(555) 123-4567',
+      address: '123 Main Street',
+      city: 'New York',
+      state: 'NY',
+      zipcode: '10001',
+      hours: {
+        monday: { open: '06:00', close: '22:00', isOpen: true },
+        tuesday: { open: '06:00', close: '22:00', isOpen: true },
+        wednesday: { open: '06:00', close: '22:00', isOpen: true },
+        thursday: { open: '06:00', close: '22:00', isOpen: true },
+        friday: { open: '06:00', close: '23:00', isOpen: true },
+        saturday: { open: '07:00', close: '23:00', isOpen: true },
+        sunday: { open: '07:00', close: '22:00', isOpen: true },
+      }
+    },
+    tier: 'professional',
+    enabledWidgets: [
+      'total-menus',
+      'active-qr-codes',
+      'total-views',
+      'revenue',
+      'avg-time',
+      'menu-item-views',
+      'return-visitors',
+      'peak-hours',
+      'language-preferences',
+      'menu-categories',
+      'dietary-filters',
+      'search-usage',
+      'views-chart',
+      'device-usage',
+      'menu-views-distribution'
+    ]
+  },
+  {
+    subdomain: 'pizza-place',
+    name: "Pizza Place",
+    credentials: {
+      email: 'owner@pizza-place.com',
+      password: 'Password123!'
+    },
+    businessInfo: {
+      phone: '(555) 234-5678',
+      address: '456 Oak Avenue',
+      city: 'Chicago',
+      state: 'IL',
+      zipcode: '60601',
+      hours: {
+        monday: { open: '11:00', close: '23:00', isOpen: true },
+        tuesday: { open: '11:00', close: '23:00', isOpen: true },
+        wednesday: { open: '11:00', close: '23:00', isOpen: true },
+        thursday: { open: '11:00', close: '23:00', isOpen: true },
+        friday: { open: '11:00', close: '00:00', isOpen: true },
+        saturday: { open: '11:00', close: '00:00', isOpen: true },
+        sunday: { open: '12:00', close: '22:00', isOpen: true },
+      }
+    },
+    tier: 'starter',
+    enabledWidgets: [
+      'total-menus',
+      'active-qr-codes',
+      'total-views',
+      'menu-item-views',
+      'views-chart'
+    ]
+  },
+  {
+    subdomain: 'cafe-bistro',
+    name: "Café Bistro",
+    credentials: {
+      email: 'manager@cafe-bistro.com',
+      password: 'Password123!'
+    },
+    businessInfo: {
+      phone: '(555) 345-6789',
+      address: '789 Elm Street',
+      city: 'San Francisco',
+      state: 'CA',
+      zipcode: '94105',
+      hours: {
+        monday: { open: '08:00', close: '21:00', isOpen: true },
+        tuesday: { open: '08:00', close: '21:00', isOpen: true },
+        wednesday: { open: '08:00', close: '21:00', isOpen: true },
+        thursday: { open: '08:00', close: '21:00', isOpen: true },
+        friday: { open: '08:00', close: '22:00', isOpen: true },
+        saturday: { open: '09:00', close: '22:00', isOpen: true },
+        sunday: { open: '09:00', close: '20:00', isOpen: true },
+      }
+    },
+    tier: 'professional',
+    enabledWidgets: [
+      'total-menus',
+      'active-qr-codes',
+      'total-views',
+      'menu-item-views',
+      'peak-hours',
+      'views-chart',
+      'device-usage'
+    ]
+  },
+  {
+    subdomain: 'downtown-pub',
+    name: "Downtown Pub",
+    credentials: {
+      email: 'pub@downtown-pub.com',
+      password: 'Password123!'
+    },
+    businessInfo: {
+      phone: '(555) 456-7890',
+      address: '321 Pine Street',
+      city: 'Boston',
+      state: 'MA',
+      zipcode: '02108',
+      hours: {
+        monday: { open: '16:00', close: '02:00', isOpen: true },
+        tuesday: { open: '16:00', close: '02:00', isOpen: true },
+        wednesday: { open: '16:00', close: '02:00', isOpen: true },
+        thursday: { open: '16:00', close: '02:00', isOpen: true },
+        friday: { open: '16:00', close: '03:00', isOpen: true },
+        saturday: { open: '16:00', close: '03:00', isOpen: true },
+        sunday: { open: '16:00', close: '02:00', isOpen: true },
+      }
+    },
+    tier: 'professional',
+    enabledWidgets: [
+      'total-menus',
+      'active-qr-codes',
+      'total-views',
+      'revenue',
+      'avg-time',
+      'menu-item-views',
+      'peak-hours',
+      'views-chart',
+      'device-usage'
+    ]
+  },
+  {
+    subdomain: 'family-diner',
+    name: "Family Diner",
+    credentials: {
+      email: 'admin@family-diner.com',
+      password: 'Password123!'
+    },
+    businessInfo: {
+      phone: '(555) 567-8901',
+      address: '567 Maple Drive',
+      city: 'Los Angeles',
+      state: 'CA',
+      zipcode: '90012',
+      hours: {
+        monday: { open: '00:00', close: '23:59', isOpen: true },
+        tuesday: { open: '00:00', close: '23:59', isOpen: true },
+        wednesday: { open: '00:00', close: '23:59', isOpen: true },
+        thursday: { open: '00:00', close: '23:59', isOpen: true },
+        friday: { open: '00:00', close: '23:59', isOpen: true },
+        saturday: { open: '00:00', close: '23:59', isOpen: true },
+        sunday: { open: '00:00', close: '23:59', isOpen: true },
+      }
+    },
+    tier: 'enterprise',
+    enabledWidgets: DASHBOARD_WIDGETS.map(widget => widget.id)
+  }
+];
+
+// Update the Login component to use these credentials
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false)
+  const [showDemoCredentials, setShowDemoCredentials] = useState(false)
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically send a request to your API to authenticate the user
-    // For this example, we'll just simulate a successful login
-    console.log('Login with', email, password)
-    navigate('/dashboard')
+    
+    // Find matching restaurant credentials
+    const restaurant = MOCK_RESTAURANTS.find(
+      r => r.credentials.email === email && r.credentials.password === password
+    )
+
+    if (restaurant) {
+      // Store login info in localStorage or sessionStorage
+      localStorage.setItem('currentRestaurant', JSON.stringify({
+        subdomain: restaurant.subdomain,
+        name: restaurant.name,
+        email: email,
+        businessInfo: restaurant.businessInfo
+      }))
+      
+      // Redirect to dashboard
+      navigate('/dashboard')
+    } else {
+      setError('Invalid email or password')
+    }
   }
 
   return (
@@ -1325,6 +1935,9 @@ function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
+              {error && (
+                <p className="text-sm text-red-500">{error}</p>
+              )}
               <Button className="w-full" type="submit">
                 Login
               </Button>
@@ -1345,6 +1958,27 @@ function Login() {
                   Forgot password?
                 </button>
               </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowDemoCredentials(!showDemoCredentials)}
+                  className="text-sm text-primary hover:underline"
+                >
+                  {showDemoCredentials ? 'Hide Demo Credentials' : 'Show Demo Credentials'}
+                </button>
+              </div>
+              {showDemoCredentials && (
+                <div className="mt-4 text-left text-sm border rounded-md p-4">
+                  <h4 className="font-semibold mb-2">Demo Accounts:</h4>
+                  {MOCK_RESTAURANTS.map((restaurant) => (
+                    <div key={restaurant.subdomain} className="mb-2">
+                      <p className="font-medium">{restaurant.name}:</p>
+                      <p>Email: {restaurant.credentials.email}</p>
+                      <p>Password: {restaurant.credentials.password}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1513,7 +2147,7 @@ function CreateMenuModal({ isOpen, onClose, onSubmit }: {
 }
 
 
-function Sidebar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen: boolean; setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>> }) {
+function Sidebar({ isSidebarOpen, setIsSidebarOpen, userInfo }: { isSidebarOpen: boolean; setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>; userInfo: { name: string; email: string } }) {
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -1567,8 +2201,8 @@ function Sidebar({ isSidebarOpen, setIsSidebarOpen }: { isSidebarOpen: boolean; 
                   <AvatarFallback>JD</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col items-start">
-                  <span className="text-sm font-medium">John Doe</span>
-                  <span className="text-xs text-muted-foreground">john@example.com</span>
+                  <span className="text-sm font-medium">{userInfo.name}</span>
+                  <span className="text-xs text-muted-foreground">{userInfo.email}</span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
@@ -1637,13 +2271,19 @@ function DashboardContent() {
   const [deviceData, setDeviceData] = useState(getDeviceData(selectedTimeRange))
   const [chartData, setChartData] = useState(getChartData(selectedTimeRange))
   const [mostViewedItems, setMostViewedItems] = useState(getMostViewedItems(selectedTimeRange))
-  const [enabledWidgets, setEnabledWidgets] = useState<string[]>(() => {
-    const savedWidgets = localStorage.getItem('enabledWidgets')
-    if (savedWidgets) {
-      return JSON.parse(savedWidgets)
+  
+  // Get current restaurant from localStorage
+  const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(() => {
+    const stored = localStorage.getItem('currentRestaurant')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return MOCK_RESTAURANTS.find(r => r.subdomain === parsed.subdomain) || null
     }
-    return DASHBOARD_WIDGETS.filter(widget => widget.defaultEnabled).map(widget => widget.id)
+    return null
   })
+
+  // Use restaurant-specific enabled widgets
+  const enabledWidgets = currentRestaurant?.enabledWidgets || []
 
   const isWidgetEnabled = (widgetId: string) => enabledWidgets.includes(widgetId)
 
@@ -1923,9 +2563,9 @@ function DashboardContent() {
                   <div className="h-[250px] w-[250px]">
                     <Pie
                       data={{
-                        labels: mockMenuViews.map(menu => menu.name),
+                        labels: mockMenuViews.map(menu => menu.menu.name),
                         datasets: [{
-                          data: mockMenuViews.map(menu => menu.views),
+                          data: mockMenuViews.map(menu => menu.view_count),
                           backgroundColor: COLORS,
                           borderWidth: 0,
                         }],
@@ -1944,16 +2584,16 @@ function DashboardContent() {
                 </div>
                 <div className="mt-4 space-y-2">
                   {mockMenuViews.map((menu, index) => (
-                    <div key={menu.name} className="flex items-center justify-between">
+                    <div key={menu.menu_id} className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div 
                           className="w-3 h-3 mr-2 rounded-sm" 
                           style={{ backgroundColor: COLORS[index % COLORS.length] }}
                         />
-                        <span className="text-sm">{menu.name}</span>
+                        <span className="text-sm">{menu.menu.name}</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {menu.views.toLocaleString()} views ({menu.percentage}%)
+                        {menu.view_count.toLocaleString()} views ({menu.percentage}%)
                       </div>
                     </div>
                   ))}
@@ -2037,27 +2677,66 @@ function DashboardContent() {
 }
 
 function MenusContent() {
-  const [menus, setMenus] = useState(mockMenus)
+  // Get current restaurant from localStorage
+  const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(() => {
+    const stored = localStorage.getItem('currentRestaurant')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return MOCK_RESTAURANTS.find(r => r.subdomain === parsed.subdomain) || null
+    }
+    return null
+  })
+  // Get menus for current restaurant
+  const [menus, setMenus] = useState<Menu[]>(() => {
+    if (currentRestaurant) {
+      // Add missing required properties to each menu object
+      return (mockMenusByRestaurant[currentRestaurant.subdomain as keyof typeof mockMenusByRestaurant] || [])
+        .map((menu): Menu => ({
+          ...menu,
+          available_days: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          organization_id: '123e4567-e89b-12d3-a456-426614174000',
+          layout: menu.layout as "grid" | "list" | "compact",
+          categories: menu.categories.map(category => ({
+            ...category,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            items: category.items.map(item => ({
+              ...item,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }))
+          }))
+        }));
+    }
+    return [];
+  })
+
   const [isCreateMenuModalOpen, setIsCreateMenuModalOpen] = useState(false)
   const navigate = useNavigate()
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     setMenus(menus.filter(menu => menu.id !== id))
   }
 
-  const handleCreateMenu = (newMenu: any) => {
+  const handleCreateMenu = (newMenu: Partial<Menu>) => {
     setMenus(prevMenus => [...prevMenus, {
-      id: prevMenus.length + 1,
+      id: crypto.randomUUID(),
       ...newMenu,
-      items: 0,
-      lastUpdated: 'Just now',
-      isListed: true // New menus are listed by default
-    }])
+      categories: [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      organization_id: '123e4567-e89b-12d3-a456-426614174001',
+      is_listed: true,
+      available_days: [],
+      layout: 'grid'
+    } as Menu])
   }
 
-  const toggleMenuListing = (id: number) => {
+  const toggleMenuListing = (id: string) => {
     setMenus(prevMenus => prevMenus.map(menu => 
-      menu.id === id ? { ...menu, isListed: !menu.isListed } : menu
+      menu.id === id ? { ...menu, is_listed: !menu.is_listed } : menu
     ))
   }
 
@@ -2072,14 +2751,14 @@ function MenusContent() {
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {menus.map(menu => (
-            <Card key={menu.id} className={`overflow-hidden ${!menu.isListed ? 'opacity-75' : ''}`}>
+            <Card key={menu.id} className={`overflow-hidden ${!menu.is_listed ? 'opacity-75' : ''}`}>
               <div className="relative h-48 w-full">
                 <img
-                  src={menu.image}
+                  src={menu.image_url}
                   alt={menu.name}
                   className="w-full h-full object-cover"
                 />
-                {!menu.isListed && (
+                {!menu.is_listed && (
                   <div className="absolute top-2 right-2">
                     <span className="bg-gray-900/75 text-white px-2 py-1 rounded-md text-sm">
                       Unlisted
@@ -2107,7 +2786,7 @@ function MenusContent() {
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => toggleMenuListing(menu.id)}>
-                        {menu.isListed ? 'Unlist Menu' : 'List Menu'}
+                        {menu.is_listed ? 'Unlist Menu' : 'List Menu'}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
@@ -2122,10 +2801,10 @@ function MenusContent() {
               </CardHeader>
               <CardContent>
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <div>{menu.items} items</div>
-                  <div>Updated {menu.lastUpdated}</div>
+                  <div>{menu.categories.reduce((total, category) => total + category.items.length, 0)} items</div>
+                  <div>Updated {new Date(menu.updated_at).toLocaleString()}</div>
                 </div>
-                {!menu.isListed && (
+                {!menu.is_listed && (
                   <div className="mt-2 text-sm text-muted-foreground">
                     This menu is not visible to customers
                   </div>
@@ -2244,11 +2923,17 @@ function QRCodesContent() {
   const [isQRCodeModalOpen, setIsQRCodeModalOpen] = useState(false)
 
   interface QRCode {
-    id: number;
-    menu: string;
-    restaurant: string;
-    created: string;
-    scans: number;
+    id: string;
+    menu_id: string;
+    created_at: string;
+    last_regenerated_at: string;
+    menu: {
+      name: string;
+      organization: {
+        subdomain: string;
+      };
+    };
+    views: number;
   }
 
   const handleView = (qrCode: QRCode) => {
@@ -2258,7 +2943,7 @@ function QRCodesContent() {
 
   const handleDownload = async (qrCode: QRCode) => {
     // Generate QR code URL
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${qrCode.restaurant}.menuqr.com/${qrCode.menu.toLowerCase().replace(/\s+/g, '-')}`
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${qrCode.menu.organization.subdomain}.menuqr.com/${qrCode.menu.name.toLowerCase().replace(/\s+/g, '-')}`
     
     try {
       // Fetch the QR code image
@@ -2269,7 +2954,7 @@ function QRCodesContent() {
       const downloadUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = downloadUrl
-      link.download = `${qrCode.menu.toLowerCase().replace(/\s+/g, '-')}-qr-code.png`
+      link.download = `${qrCode.menu.name.toLowerCase().replace(/\s+/g, '-')}-qr-code.png`
       
       // Trigger download
       document.body.appendChild(link)
@@ -2288,7 +2973,7 @@ function QRCodesContent() {
     setQrCodes(prevQrCodes => 
       prevQrCodes.map(qr => 
         qr.id === qrCode.id 
-          ? { ...qr, created: 'Just now' }
+          ? { ...qr, created_at: new Date().toISOString() }
           : qr
       )
     )
@@ -2316,9 +3001,9 @@ function QRCodesContent() {
               <TableBody>
                 {qrCodes.map(qrCode => (
                   <TableRow key={qrCode.id}>
-                    <TableCell>{qrCode.menu}</TableCell>
-                    <TableCell>{qrCode.created}</TableCell>
-                    <TableCell>{qrCode.scans}</TableCell>
+                    <TableCell>{qrCode.menu.name}</TableCell>
+                    <TableCell>{new Date(qrCode.created_at).toLocaleString()}</TableCell>
+                    <TableCell>{qrCode.views}</TableCell>
                     <TableCell className="space-x-2">
                       <Button variant="ghost" onClick={() => handleView(qrCode)}>
                         View
@@ -2359,7 +3044,7 @@ function QRCodeModal({ isOpen, onClose, qrCode, setQrCodes }: {
 
   useEffect(() => {
     // Generate QR code with subdomain URL format
-    setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${qrCode.restaurant}.menuqr.com/${qrCode.menu.toLowerCase().replace(/\s+/g, '-')}`)
+    setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://${qrCode.menu.organization.subdomain}.menuqr.com/${qrCode.menu.name.toLowerCase().replace(/\s+/g, '-')}`)
   }, [qrCode])
 
   const handleDownload = async () => {
@@ -2372,7 +3057,7 @@ function QRCodeModal({ isOpen, onClose, qrCode, setQrCodes }: {
       const downloadUrl = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = downloadUrl
-      link.download = `${qrCode.menu.toLowerCase().replace(/\s+/g, '-')}-qr-code.png`
+      link.download = `${qrCode.menu.name.toLowerCase().replace(/\s+/g, '-')}-qr-code.png`
       
       // Trigger download
       document.body.appendChild(link)
@@ -2390,13 +3075,13 @@ function QRCodeModal({ isOpen, onClose, qrCode, setQrCodes }: {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>QR Code for {qrCode.menu}</DialogTitle>
+          <DialogTitle>QR Code for {qrCode.menu.name}</DialogTitle>
           <DialogDescription>
             Scan this QR code to view your menu or share it with your customers.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center space-y-4">
-          <img src={qrCodeUrl} alt={`QR Code for ${qrCode.menu}`} className="w-48 h-48" />
+          <img src={qrCodeUrl} alt={`QR Code for ${qrCode.menu.name}`} className="w-48 h-48" />
           <Button onClick={handleDownload}>Download</Button>
         </div>
       </DialogContent>
@@ -2473,15 +3158,23 @@ function SettingsContent() {
     zipcode: '10001',
   })
 
-  const [enabledWidgets, setEnabledWidgets] = useState<string[]>(() => {
-    const savedWidgets = localStorage.getItem('enabledWidgets')
-    if (savedWidgets) {
-      return JSON.parse(savedWidgets)
+  const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(() => {
+    const stored = localStorage.getItem('currentRestaurant')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return MOCK_RESTAURANTS.find(r => r.subdomain === parsed.subdomain) || null
     }
-    return DASHBOARD_WIDGETS.filter(widget => widget.defaultEnabled).map(widget => widget.id)
+    return null
   })
 
+  const canManageWidgets = currentRestaurant?.tier === 'enterprise'
+  const [enabledWidgets, setEnabledWidgets] = useState<string[]>(
+    currentRestaurant?.enabledWidgets || []
+  )
+
   const toggleWidget = (widgetId: string) => {
+    if (!canManageWidgets) return // Only enterprise tier can manage widgets
+
     setEnabledWidgets(prev => {
       const newWidgets = prev.includes(widgetId)
         ? prev.filter(id => id !== widgetId)
@@ -2899,7 +3592,7 @@ function SettingsContent() {
                     <Label>Font Family</Label>
                     <Select
                       value={brandingSettings.fontFamily}
-                      onValueChange={(value) => setBrandingSettings(prev => ({
+                      onValueChange={(value: string) => setBrandingSettings(prev => ({
                         ...prev,
                         fontFamily: value
                       }))}
@@ -3348,7 +4041,10 @@ function SettingsContent() {
               <CardHeader>
                 <CardTitle>Dashboard Widgets</CardTitle>
                 <CardDescription>
-                  Customize which widgets appear on your dashboard
+                  {canManageWidgets 
+                    ? 'Customize which widgets appear on your dashboard'
+                    : `${currentRestaurant?.tier.charAt(0).toUpperCase()}${currentRestaurant?.tier.slice(1)} tier includes the following widgets:`
+                  }
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -3356,13 +4052,21 @@ function SettingsContent() {
                   {DASHBOARD_WIDGETS.map((widget) => (
                     <div
                       key={widget.id}
-                      className="flex items-center space-x-4 p-4 border rounded-lg"
+                      className={`flex items-center space-x-4 p-4 border rounded-lg ${
+                        !enabledWidgets.includes(widget.id) ? 'opacity-50' : ''
+                      }`}
                     >
-                      <Checkbox
-                        id={widget.id}
-                        checked={enabledWidgets.includes(widget.id)}
-                        onCheckedChange={() => toggleWidget(widget.id)}
-                      />
+                      {canManageWidgets ? (
+                        <Checkbox
+                          id={widget.id}
+                          checked={enabledWidgets.includes(widget.id)}
+                          onCheckedChange={() => toggleWidget(widget.id)}
+                        />
+                      ) : (
+                        <div className={`w-4 h-4 rounded-sm border ${
+                          enabledWidgets.includes(widget.id) ? 'bg-primary' : 'bg-gray-200'
+                        }`} />
+                      )}
                       <div className="flex-1 space-y-1">
                         <Label
                           htmlFor={widget.id}
@@ -3377,6 +4081,13 @@ function SettingsContent() {
                     </div>
                   ))}
                 </div>
+                {!canManageWidgets && (
+                  <div className="mt-4 p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      Upgrade to Enterprise tier to customize your dashboard widgets.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -3443,13 +4154,44 @@ function SettingsContent() {
 }
 
 interface MenuItem {
+  id: string;
   name: string;
-  price: string;
   description: string;
+  price: string;
+  image_url?: string;
   ingredients?: string[];
   allergens?: string[];
   calories?: number;
-  image?: string;
+  display_order: number;
+  is_available: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  display_order: number;
+  items: MenuItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface Menu {
+  id: string;
+  name: string;
+  description?: string;
+  image_url?: string;
+  is_listed: boolean;
+  start_time?: string;
+  end_time?: string;
+  available_days: number[];
+  layout: 'grid' | 'list' | 'compact';
+  categories: Category[];
+  created_at: string;
+  updated_at: string;
+  organization_id: string;
 }
 
 function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string | null }) {
@@ -3470,65 +4212,50 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
         
         await new Promise(resolve => setTimeout(resolve, 1000))
         
+        // Get the restaurant's menus
+        const restaurantMenus = mockMenusByRestaurant[restaurantSubdomain as keyof typeof mockMenusByRestaurant]
+        
+        if (!restaurantMenus) {
+          setError('Restaurant not found')
+          return
+        }
+
         if (!menuName) {
-          // If no menu is specified, show only listed menus
+          // If no menu is specified, show only listed menus for this restaurant
+          const listedMenus = restaurantMenus
+            .filter(menu => menu.is_listed)
+            .map(menu => ({
+              name: menu.name,
+              description: menu.description,
+              path: menu.name.toLowerCase().replace(/\s+/g, '-'),
+              image: menu.image_url,
+              isListed: menu.is_listed
+            }))
+
           setMenuData({
             restaurantName: restaurantSubdomain?.replace(/-/g, ' '),
-            availableMenus: [
-              {
-                name: 'Lunch Special',
-                description: 'Available Monday-Friday, 11am-3pm',
-                path: 'lunch-special',
-                image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&h=400&fit=crop',
-                isListed: true
-              },
-              {
-                name: 'Dinner Menu',
-                description: 'Available Daily, 5pm-10pm',
-                path: 'dinner-menu',
-                image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=800&h=400&fit=crop',
-                isListed: true
-              },
-              {
-                name: 'Weekend Brunch',
-                description: 'Available Weekends, 9am-2pm',
-                path: 'weekend-brunch',
-                image: 'https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?w=800&h=400&fit=crop',
-                isListed: true
-              }
-            ].filter(menu => menu.isListed) // Only show listed menus
+            availableMenus: listedMenus
           })
         } else {
-          // Only show the menu if it's listed
-          const menu = mockMenus.find(m => m.name.toLowerCase().replace(/\s+/g, '-') === menuName)
-          if (!menu || !menu.isListed) {
+          // Show specific menu if it exists and is listed
+          const menu = restaurantMenus.find(m => 
+            m.name.toLowerCase().replace(/\s+/g, '-') === menuName
+          )
+          
+          if (!menu || !menu.is_listed) {
             setError('Menu not found')
             return
           }
-          // Show specific menu items as before
+
           setMenuData({
             restaurantName: restaurantSubdomain?.replace(/-/g, ' '),
             menuName: menuName?.replace(/-/g, ' '),
-            items: [
-              {
-                name: 'Classic Cheeseburger',
-                price: '$12.99',
-                description: 'Hand-pressed beef patty with melted cheddar',
-                ingredients: ['Beef patty', 'Cheddar cheese', 'Lettuce', 'Tomato', 'Onion', 'Brioche bun'],
-                allergens: ['Dairy', 'Gluten'],
-                calories: 850,
-                image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=300'
-              },
-              {
-                name: 'Caesar Salad',
-                price: '$10.99',
-                description: 'Crisp romaine lettuce with classic Caesar dressing',
-                ingredients: ['Romaine lettuce', 'Parmesan cheese', 'Croutons', 'Caesar dressing'],
-                allergens: ['Dairy', 'Gluten', 'Eggs'],
-                calories: 450,
-                image: 'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=300'
-              },
-            ]
+            items: menu.categories.flatMap(category => 
+              category.items.map(item => ({
+                ...item,
+                price: item.price
+              }))
+            )
           })
         }
         setLoading(false)
@@ -3640,10 +4367,10 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
               >
                 <CardContent className="p-4">
                   <div className="flex gap-4">
-                    {item.image ? (
+                    {item.image_url ? (
                       <div className="w-24 h-24 flex-shrink-0">
                         <img
-                          src={item.image}
+                          src={item.image_url}
                           alt={item.name}
                           className="w-full h-full object-cover rounded-md"
                         />
@@ -3682,10 +4409,10 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
                     </DialogTitle>
                   </DialogHeader>
                   <div className="grid gap-4">
-                    {selectedItem.image && (
+                    {selectedItem.image_url && (
                       <div className="w-full h-48 relative">
                         <img
-                          src={selectedItem.image}
+                          src={selectedItem.image_url}
                           alt={selectedItem.name}
                           className="w-full h-full object-cover rounded-md"
                         />
@@ -3768,6 +4495,12 @@ function Dashboard() {
     return window.innerWidth >= 1024
   })
 
+  // Add userInfo state
+  const [userInfo] = useState({
+    name: "John Doe",
+    email: "john@example.com"
+  })
+
   // Add event listener to handle resize
   useEffect(() => {
     const handleResize = () => {
@@ -3784,7 +4517,11 @@ function Dashboard() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-100">
-      <Sidebar isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen} />
+      <Sidebar 
+        isSidebarOpen={isSidebarOpen} 
+        setIsSidebarOpen={setIsSidebarOpen} 
+        userInfo={userInfo} // Add the userInfo prop here
+      />
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header setIsSidebarOpen={setIsSidebarOpen} />
