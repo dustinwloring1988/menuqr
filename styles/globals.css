@@ -1,0 +1,55 @@
+```css
+/* Light mode colors */
+:root {
+  --background: 0, 0%, 100%;
+  --foreground: 0, 0%, 5%;
+  --card: 0, 0%, 97.3%;
+  --card-foreground: 0, 0%, 5%;
+  --popover: 0, 0%, 96.1%;
+  --popover-foreground: 0, 0%, 24.7%;
+  --primary: 89.4, 77.7%, 37.3%;
+  --primary-foreground: 0, 0%, 95%;
+  --secondary: 210, 16%, 45%;
+  --secondary-foreground: 0, 0%, 95%;
+  --muted: 210, 16%, 67.8%;
+  --muted-foreground: 210, 16%, 83.9%;
+  --accent: 142.1, 83.5%, 46.9%;
+  --accent-foreground: 0, 0%, 95%;
+}
+
+/* Dark mode colors */
+.dark {
+  --background: 0, 0%, 5%;
+  --foreground: 0, 0%, 95%;
+  --card: 0, 0%, 12.5%;
+  --card-foreground: 0, 0%, 95%;
+  --popover: 0, 0%, 15.7%;
+  --popover-foreground: 0, 0%, 83.9%;
+  --primary: 142.1, 83.5%, 63.5%;
+  --primary-foreground: 0, 0%, 98%;
+  --secondary: 210, 34%, 70%;
+  --secondary-foreground: 0, 0%, 98%;
+  --muted: 210, 36.5%, 75.3%;
+  --muted-foreground: 210, 16%, 91.8%;
+  --accent: 142.1, 83.5%, 63.5%;
+  --accent-foreground: 0, 0%, 98%;
+}
+
+/* General styles */
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+header {
+  transition: background-color 0.3s ease;
+}
+
+header.dark {
+  background-color: hsl(var(--card)) !important; /* Dark header background */
+}
+```
+
+## 6. Update Main Application File to Initialize Theme
+
+Let's check the main application file (usually `pages/_app.js` or similar):
