@@ -7,6 +7,12 @@ ApplicationWindow {
     height: 600
     title: "MenuQR"
 
+    // Import our custom styles
+    import "styles.qml" as Styles
+
+    // Apply background color from styles
+    color: Styles.backgroundColor
+
     // Search bar at the top
     Column {
         anchors.top: parent.top
@@ -18,10 +24,22 @@ ApplicationWindow {
             id: searchField
             placeholderText: "Search menus or items"
             width: parent.width * 0.8
+
+            // Apply styles from our custom style file
+            background: Styles.TextField.background
+            color: Styles.TextField.color
+            font: Styles.defaultFont
+            border.color: Styles.primaryColor
         }
 
         Button {
             text: "Search"
+
+            // Apply button styles
+            background: Styles.Button.background
+            color: Styles.Button.color
+            font: Styles.Button.font
+
             onClicked: {
                 // Implement search functionality here
                 console.log("Searching for: " + searchField.text)
@@ -39,7 +57,8 @@ ApplicationWindow {
         // Menu list on the left
         Rectangle {
             width: parent.width * 0.3
-            color: "lightgray"
+            color: Styles.backgroundColor
+
             Layout.fillWidth: true
             Layout.fillHeight: true
 
@@ -64,6 +83,7 @@ ApplicationWindow {
                     text: menuList.selectedItem ? menuList.selectedItem.name : "Select a menu item"
                     font.pointSize: 20
                     bold: true
+                    color: Styles.primaryColor
                 }
 
                 MenuItem {
@@ -87,6 +107,11 @@ ApplicationWindow {
             Button {
                 text: "Edit"
                 enabled: menuList.selectedItem !== null
+
+                // Apply button styles
+                background: Styles.Button.background
+                color: Styles.Button.color
+                font: Styles.Button.font
 
                 onClicked: {
                     // Open MenuEditor with selected item
