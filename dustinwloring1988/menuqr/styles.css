@@ -5,4 +5,25 @@ body {
   font-family: Arial, sans-serif;
 }
 
+/*
+ * The following styles have been moved to menu.css
+ * and should be removed from here to avoid duplication.
+ *
+ * .menu {
+ *   display: flex;
+ *   flex-direction: column;
+ *   padding: 20px;
+ * }
+ *
+ * .menu-item {
+ *   margin-bottom: 15px;
+ * }
+ *
+ * .menu-link {
+ *   text-decoration: none;
+ *   color: var(--primary-foreground);
+ *   font-size: 16px;
+ * }
+ */
+
 /* Any other non-menu related styles remain here */
