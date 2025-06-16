@@ -1,0 +1,24 @@
+/*
+ * Styles specific to the menu component
+ */
+.menu {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  background-color: var(--card);
+}
+
+.menu-item {
+  margin-bottom: 15px;
+}
+
+.menu-link {
+  text-decoration: none;
+  color: var(--primary-foreground);
+  font-size: 16px;
+  transition: color 0.3s;
+}
+
+.menu-link:hover {
+  color: var(--secondary);
+}
