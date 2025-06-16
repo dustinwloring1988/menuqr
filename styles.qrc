@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <!-- Add custom styles or resources here -->
+    </qresource>
+</RCC>
