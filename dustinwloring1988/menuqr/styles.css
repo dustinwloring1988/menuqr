@@ -1,0 +1,8 @@
+@import "menu.css";
+
+/* Other existing global styles */
+body {
+  font-family: Arial, sans-serif;
+}
+
+/* Any other non-menu related styles remain here */
