@@ -1,0 +1,12 @@
+/* styles.css */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+body {
+  background-color: var(--background);
+}
+
+button {
+  color: var(--text-color);
+}
