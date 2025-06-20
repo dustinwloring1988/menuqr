@@ -1,0 +1,19 @@
+/* Primary UI Elements */
+h1, h2, h3, h4, h5, h6 {
+  color: #fff;
+}
+
+p {
+  color: #fff;
+}
+
+a {
+  text-decoration: underline;
+  color: #00ff00;
+}
+
+button {
+  background-color: #333;
+  border-color: #000;
+  color: #fff;
+}

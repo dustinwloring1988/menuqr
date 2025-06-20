@@ -1,0 +1,14 @@
+/* Dark Mode CSS */
+body.dark-mode {
+  background-color: #333;
+  color: #fff;
+  text-shadow: 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+body.dark-mode:hover {
+  background-color: #444;
+}
+
+body.dark-mode:focus {
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
