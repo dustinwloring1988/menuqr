@@ -1,0 +1,10 @@
+/* Existing global styles */
+
+/* Import dark mode styles */
+@import './styles/_darkMode.css';
+
+/* Light mode default styles */
+body {
+    background-color: #ffffff;
+    color: #333333;
+}
