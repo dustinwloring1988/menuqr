@@ -27,7 +27,7 @@
     "react": "^18.3.1",
     "react-apexcharts": "^1.4.2",
     "react-chartjs-2": "^5.2.0",
-    "react-dom": "^18.3.1",
+    "react-dom": "^19.2.3",
     "react-router-dom": "^6.27.0",
     "recharts": "^2.13.0",
     "shadcn": "^1.0.0",
@@ -37,7 +37,7 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
     "eslint": "^8",
     "eslint-config-next": "15.0.1",
