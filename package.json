@@ -18,6 +18,7 @@
     "@radix-ui/react-select": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-toggle": "^1.1.0",
+    "appwrite": "^16.0.0",
     "chart.js": "^4.4.5",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
