@@ -4317,35 +4317,42 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
       try {
         console.log(`Fetching menu data for restaurant: ${restaurantSubdomain}, menu: ${menuName}`)
 
-        const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
-        const hostnameParts = hostname.split('.').filter(Boolean)
-        const currentSubdomain =
-          restaurantSubdomain ||
-          (hostnameParts.length > 2 ? hostnameParts[0] : null)
+        const hostname = typeof window !== 'undefined'
+          ? window.location.hostname
+          : ''
+        const targetSubdomain = hostname.includes('vercel.app') ||
+          hostname.includes('localhost')
+          ? 'burgerhouse'
+          : hostname.split('.')[0]
+        console.log('Target Subdomain:', targetSubdomain)
 
         const {
           databaseId,
           restaurantsCollectionId,
           menuCollectionId,
         } = getAppwriteConfig()
-        const restaurantsResponse = await databases.listDocuments(
+        let restaurantsResponse = await databases.listDocuments(
           databaseId,
-          restaurantsCollectionId
+          restaurantsCollectionId,
+          [Query.equal('subdomain', targetSubdomain)]
         )
-        const restaurants = restaurantsResponse.documents as AppwriteDocument[]
+        let restaurants = restaurantsResponse.documents as AppwriteDocument[]
+
+        if (restaurants.length === 0) {
+          restaurantsResponse = await databases.listDocuments(
+            databaseId,
+            restaurantsCollectionId
+          )
+          restaurants = restaurantsResponse.documents as AppwriteDocument[]
+        }
 
         if (restaurants.length === 0) {
           setError('No restaurants are available')
           return
         }
 
-        const normalizedSubdomain = currentSubdomain?.trim().toLowerCase()
-        const restaurant = normalizedSubdomain
-          ? restaurants.find(document =>
-              String(document.subdomain || '').trim().toLowerCase() ===
-              normalizedSubdomain
-            ) || restaurants[0]
-          : restaurants[0]
+        const restaurant = restaurants[0]
+        console.log('Matched Restaurant:', restaurant)
         const restaurantId = restaurant.$id
 
         if (!restaurantId) {
@@ -4356,11 +4363,10 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
         const response = await databases.listDocuments(
           databaseId,
           menuCollectionId,
-          [Query.equal('restaurant_id', [restaurantId])]
+          [Query.equal('restaurant_id', restaurantId)]
         )
 
-        console.log('Fetched restaurant ID:', restaurant.$id)
-        console.log('Fetched menu items:', response.documents)
+        console.log('Fetched Menu Items:', response.documents)
 
         const menuDocuments = response.documents as AppwriteDocument[]
         const menuItems = menuDocuments
