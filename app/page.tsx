@@ -4233,9 +4233,17 @@ function normalizeAppwriteMenu(document: AppwriteDocument): Menu | null {
   const menu = document.menu && typeof document.menu === 'object'
     ? { ...document.menu, id: document.menu.id || document.$id }
     : document
-  const categories = Array.isArray(menu.categories) ? menu.categories : []
+  const categories = Array.isArray(menu.categories)
+    ? menu.categories
+    : menu.name
+      ? [{
+          id: `${menu.id || document.$id || menu.name}-category`,
+          name: menu.category_name || 'Menu',
+          items: [menu],
+        }]
+      : []
 
-  if (!menu.name || !Array.isArray(menu.categories)) {
+  if (!menu.name) {
     return null
   }
 
@@ -4315,24 +4323,27 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           (hostnameParts.length > 2 ? hostnameParts[0] : null)
 
         const { databaseId, collectionId } = getAppwriteConfig()
+        // Always fetch the complete collection. Preview URLs and the root domain
+        // do not identify a tenant, so the first document is the safe fallback.
         const response = await databases.listDocuments(databaseId, collectionId)
-        const publishedMenus = response.documents
+        const allMenus = response.documents
           .map(document => normalizeAppwriteMenu(document))
-          .filter((menu): menu is Menu => Boolean(menu && menu.isPublished))
+          .filter((menu): menu is Menu => Boolean(menu))
 
-        if (publishedMenus.length === 0) {
-          setError('No published menus are available')
+        if (allMenus.length === 0) {
+          setError('No menus are available')
           return
         }
 
         const normalizedSubdomain = currentSubdomain?.trim().toLowerCase()
         const matchingSubdomainMenu = normalizedSubdomain
-          ? publishedMenus.find(menu =>
+          ? allMenus.find(menu =>
+              menu.isPublished &&
               menu.organizationSubdomain?.trim().toLowerCase() === normalizedSubdomain
             )
           : undefined
-        const fallbackMenu = matchingSubdomainMenu || publishedMenus[0]
-        const restaurantMenus = publishedMenus.filter(menu => {
+        const fallbackMenu = matchingSubdomainMenu || allMenus[0]
+        const restaurantMenus = allMenus.filter(menu => {
           if (matchingSubdomainMenu) {
             return menu.organizationSubdomain?.trim().toLowerCase() ===
               matchingSubdomainMenu.organizationSubdomain?.trim().toLowerCase()
