@@ -15,7 +15,7 @@ import { Bar, Pie } from 'react-chartjs-2';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ChevronDown, Menu, Plus, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check, Clock, Eye, RotateCw, LineChart, Languages, FolderTree, Filter, Search } from 'lucide-react'
+import { ChevronDown, Menu, Plus, Minus, Trash2, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check, Clock, Eye, RotateCw, LineChart, Languages, FolderTree, Filter, Search } from 'lucide-react'
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -4321,12 +4321,14 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
   const [error, setError] = useState<string | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const [isOrderOpen, setIsOrderOpen] = useState(false)
+  const [orderError, setOrderError] = useState<string | null>(null)
   const [isTermsOpen, setIsTermsOpen] = useState(false)
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('All')
   const navigate = useNavigate()
   const queryTableNumber = new URLSearchParams(location.search).get('table')
   const rawTableNumber = pathTableNumber || queryTableNumber
+  const hasTableContext = Boolean(rawTableNumber?.trim())
   const tableNumber = rawTableNumber?.trim()
     ? rawTableNumber.trim().toLowerCase().startsWith('table')
       ? rawTableNumber.trim()
@@ -4448,12 +4450,13 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
   )
 
   const sendOrderViaWhatsApp = () => {
+    const table = hasTableContext ? tableNumber : 'Not specified'
     const orderLines = cart.map(entry =>
       `${entry.quantity} x ${entry.item.name} - $${(Number.parseFloat(entry.item.price) * entry.quantity || 0).toFixed(2)}`
     )
     const message = [
-      `Dine-in order for ${menuData?.restaurantName || 'restaurant'}`,
-      `Table: ${tableNumber}`,
+      `Order for ${menuData?.restaurantName || 'restaurant'}`,
+      `Table: ${table}`,
       '',
       ...orderLines,
       '',
@@ -4463,6 +4466,37 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
       `https://wa.me/201130615489?text=${encodeURIComponent(message)}`,
       '_blank'
     )
+  }
+
+  const submitOrder = async () => {
+    setOrderError(null)
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          restaurantName: menuData?.restaurantName || 'Restaurant',
+          tableNumber,
+          items: cart.map(entry => ({
+            id: entry.item.id,
+            name: entry.item.name,
+            quantity: entry.quantity,
+            price: Number.parseFloat(entry.item.price) || 0,
+          })),
+          total: cartTotal,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('The order could not be submitted. Please try again.')
+      }
+
+      setCart([])
+      setIsOrderOpen(false)
+    } catch (err) {
+      console.error('Failed to submit dine-in order', err)
+      setOrderError(err instanceof Error ? err.message : 'Failed to submit order')
+    }
   }
 
   const menuItems = (menuData?.items || []) as MenuItem[]
@@ -4561,6 +4595,11 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
         <div className="container mx-auto px-4 py-8 flex-grow">
           <h1 className="text-3xl font-bold mb-2 capitalize">{menuData?.restaurantName}</h1>
           <h2 className="text-xl text-gray-600 mb-6 capitalize">{menuData?.menuName}</h2>
+          {hasTableContext && (
+            <div className="mb-6 inline-flex rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-800">
+              {tableNumber} (Dine-In)
+            </div>
+          )}
           <div className="mb-8 flex gap-2 overflow-x-auto border-b pb-3">
             {categories.map(category => (
               <button
@@ -4603,21 +4642,42 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
                       <span className="shrink-0 text-lg font-medium">{item.price}</span>
                     </div>
                     <p className="line-clamp-2 text-gray-600">{item.description}</p>
-                    <Button
-                      type="button"
-                      className="w-full"
-                      disabled={item.is_available === false}
-                      onClick={event => {
-                        event.stopPropagation()
-                        addToCart(item)
-                      }}
-                    >
-                      {item.is_available === false
-                        ? 'Unavailable'
-                        : cart.find(entry => entry.item.id === item.id)
-                          ? `Added (${cart.find(entry => entry.item.id === item.id)?.quantity})`
-                          : 'Add'}
-                    </Button>
+                    {(() => {
+                      const quantity = cart.find(entry => entry.item.id === item.id)?.quantity || 0
+                      if (item.is_available === false) {
+                        return <Button type="button" className="w-full" disabled>Unavailable</Button>
+                      }
+                      if (quantity === 0) {
+                        return (
+                          <Button type="button" className="w-full" onClick={() => addToCart(item)}>
+                            Add
+                          </Button>
+                        )
+                      }
+                      return (
+                        <div className="flex items-center justify-between rounded-md border p-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Decrease ${item.name} quantity`}
+                            onClick={() => updateCartQuantity(item.id, -1)}
+                          >
+                            {quantity === 1 ? <Trash2 className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+                          </Button>
+                          <span className="font-semibold">{quantity}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Increase ${item.name} quantity`}
+                            onClick={() => addToCart(item)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )
+                    })()}
                   </div>
                 </CardContent>
               </Card>
@@ -4656,10 +4716,15 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              {hasTableContext && (
+                <div className="rounded-md bg-green-50 px-3 py-2 text-sm font-semibold text-green-800">
+                  {tableNumber} (Dine-In)
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Table number</Label>
                 <div className="rounded-md border bg-gray-50 px-3 py-2 font-medium">
-                  {tableNumber}
+                  {hasTableContext ? tableNumber : 'No table selected'}
                 </div>
               </div>
               <div className="divide-y rounded-lg border">
@@ -4701,10 +4766,13 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
                 type="button"
                 className="w-full"
                 disabled={cart.length === 0}
-                onClick={sendOrderViaWhatsApp}
+                onClick={hasTableContext ? submitOrder : sendOrderViaWhatsApp}
               >
-                Send Order via WhatsApp
+                {hasTableContext ? 'Submit Order' : 'Send Order via WhatsApp'}
               </Button>
+              {orderError && (
+                <p className="text-sm text-red-600">{orderError}</p>
+              )}
             </div>
           </DialogContent>
         </Dialog>
