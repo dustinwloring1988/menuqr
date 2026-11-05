@@ -4219,9 +4219,17 @@ interface Menu {
   created_at: string;
   updated_at: string;
   organization_id: string;
+  isPublished?: boolean;
+  organizationSubdomain?: string;
 }
 
-function normalizeAppwriteMenu(document: Record<string, any>): Menu | null {
+type AppwriteDocument = Record<string, any> & {
+  $id?: string;
+  $createdAt?: string;
+  $updatedAt?: string;
+}
+
+function normalizeAppwriteMenu(document: AppwriteDocument): Menu | null {
   const menu = document.menu && typeof document.menu === 'object'
     ? { ...document.menu, id: document.menu.id || document.$id }
     : document
@@ -4237,6 +4245,16 @@ function normalizeAppwriteMenu(document: Record<string, any>): Menu | null {
     description: menu.description || undefined,
     image_url: menu.image_url || undefined,
     is_listed: menu.is_listed !== false,
+    isPublished: menu.isPublished ?? menu.is_published ?? menu.is_listed !== false,
+    organizationSubdomain:
+      menu.organizationSubdomain ||
+      menu.organization_subdomain ||
+      menu.subdomain ||
+      menu.organization?.subdomain ||
+      document.organizationSubdomain ||
+      document.organization_subdomain ||
+      document.subdomain ||
+      document.organization?.subdomain,
     start_time: menu.start_time || undefined,
     end_time: menu.end_time || undefined,
     available_days: Array.isArray(menu.available_days) ? menu.available_days : [],
@@ -4290,32 +4308,51 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
       try {
         console.log(`Fetching menu data for restaurant: ${restaurantSubdomain}, menu: ${menuName}`)
 
-        if (!restaurantSubdomain) {
-          throw new Error('Restaurant subdomain is missing from the menu URL')
-        }
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
+        const hostnameParts = hostname.split('.').filter(Boolean)
+        const currentSubdomain =
+          restaurantSubdomain ||
+          (hostnameParts.length > 2 ? hostnameParts[0] : null)
 
         const { databaseId, collectionId } = getAppwriteConfig()
         const response = await databases.listDocuments(databaseId, collectionId)
-        const restaurantMenus = response.documents
-          .filter(document => {
-            const subdomain = document.subdomain ||
-              document.restaurant_subdomain ||
-              document.organization_subdomain ||
-              document.organization?.subdomain
-            return !subdomain || subdomain === restaurantSubdomain
-          })
+        const publishedMenus = response.documents
           .map(document => normalizeAppwriteMenu(document))
-          .filter(menu => menu !== null)
+          .filter((menu): menu is Menu => Boolean(menu && menu.isPublished))
 
-        if (restaurantMenus.length === 0) {
-          setError('Restaurant not found or has no published menus')
+        if (publishedMenus.length === 0) {
+          setError('No published menus are available')
           return
         }
+
+        const normalizedSubdomain = currentSubdomain?.trim().toLowerCase()
+        const matchingSubdomainMenu = normalizedSubdomain
+          ? publishedMenus.find(menu =>
+              menu.organizationSubdomain?.trim().toLowerCase() === normalizedSubdomain
+            )
+          : undefined
+        const fallbackMenu = matchingSubdomainMenu || publishedMenus[0]
+        const restaurantMenus = publishedMenus.filter(menu => {
+          if (matchingSubdomainMenu) {
+            return menu.organizationSubdomain?.trim().toLowerCase() ===
+              matchingSubdomainMenu.organizationSubdomain?.trim().toLowerCase()
+          }
+
+          return fallbackMenu.organizationSubdomain
+            ? menu.organizationSubdomain?.trim().toLowerCase() ===
+                fallbackMenu.organizationSubdomain.trim().toLowerCase()
+            : menu.id === fallbackMenu.id
+        })
+        const restaurantName = (
+          matchingSubdomainMenu?.organizationSubdomain ||
+          fallbackMenu.organizationSubdomain ||
+          currentSubdomain ||
+          'Menu'
+        ).replace(/-/g, ' ')
 
         if (!menuName) {
           // If no menu is specified, show only listed menus for this restaurant
           const listedMenus = restaurantMenus
-            .filter(menu => menu.is_listed)
             .map(menu => ({
               name: menu.name,
               description: menu.description,
@@ -4325,7 +4362,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
             }))
 
           setMenuData({
-            restaurantName: restaurantSubdomain.replace(/-/g, ' '),
+            restaurantName,
             availableMenus: listedMenus
           })
         } else {
@@ -4340,7 +4377,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           }
 
           setMenuData({
-            restaurantName: restaurantSubdomain.replace(/-/g, ' '),
+            restaurantName,
             menuName: menuName?.replace(/-/g, ' '),
             items: menu.categories.flatMap(category => 
               category.items.map(item => ({
