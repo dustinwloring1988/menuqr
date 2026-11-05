@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { databases, getAppwriteConfig } from '@/lib/appwrite'
+import { Query } from 'appwrite'
 
 // Register Chart.js components
 ChartJS.register(ArcElement, ChartTooltip, Legend, CategoryScale, LinearScale, BarElement);
@@ -4322,82 +4323,75 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           restaurantSubdomain ||
           (hostnameParts.length > 2 ? hostnameParts[0] : null)
 
-        const { databaseId, collectionId } = getAppwriteConfig()
-        // Always fetch the complete collection. Preview URLs and the root domain
-        // do not identify a tenant, so the first document is the safe fallback.
-        const response = await databases.listDocuments(databaseId, collectionId)
-        const allMenus = response.documents
-          .map(document => normalizeAppwriteMenu(document))
-          .filter((menu): menu is Menu => Boolean(menu))
+        const {
+          databaseId,
+          restaurantsCollectionId,
+          menuCollectionId,
+        } = getAppwriteConfig()
+        const restaurantsResponse = await databases.listDocuments(
+          databaseId,
+          restaurantsCollectionId
+        )
+        const restaurants = restaurantsResponse.documents as AppwriteDocument[]
 
-        if (allMenus.length === 0) {
-          setError('No menus are available')
+        if (restaurants.length === 0) {
+          setError('No restaurants are available')
           return
         }
 
         const normalizedSubdomain = currentSubdomain?.trim().toLowerCase()
-        const matchingSubdomainMenu = normalizedSubdomain
-          ? allMenus.find(menu =>
-              menu.isPublished &&
-              menu.organizationSubdomain?.trim().toLowerCase() === normalizedSubdomain
-            )
-          : undefined
-        const fallbackMenu = matchingSubdomainMenu || allMenus[0]
-        const restaurantMenus = allMenus.filter(menu => {
-          if (matchingSubdomainMenu) {
-            return menu.organizationSubdomain?.trim().toLowerCase() ===
-              matchingSubdomainMenu.organizationSubdomain?.trim().toLowerCase()
-          }
+        const restaurant = normalizedSubdomain
+          ? restaurants.find(document =>
+              String(document.subdomain || '').trim().toLowerCase() ===
+              normalizedSubdomain
+            ) || restaurants[0]
+          : restaurants[0]
+        const restaurantId = restaurant.$id
 
-          return fallbackMenu.organizationSubdomain
-            ? menu.organizationSubdomain?.trim().toLowerCase() ===
-                fallbackMenu.organizationSubdomain.trim().toLowerCase()
-            : menu.id === fallbackMenu.id
-        })
-        const restaurantName = (
-          matchingSubdomainMenu?.organizationSubdomain ||
-          fallbackMenu.organizationSubdomain ||
-          currentSubdomain ||
-          'Menu'
-        ).replace(/-/g, ' ')
-
-        if (!menuName) {
-          // If no menu is specified, show only listed menus for this restaurant
-          const listedMenus = restaurantMenus
-            .map(menu => ({
-              name: menu.name,
-              description: menu.description,
-              path: menu.name.toLowerCase().replace(/\s+/g, '-'),
-              image: menu.image_url,
-              isListed: menu.is_listed
-            }))
-
-          setMenuData({
-            restaurantName,
-            availableMenus: listedMenus
-          })
-        } else {
-          // Show specific menu if it exists and is listed
-          const menu = restaurantMenus.find(m => 
-            m.name.toLowerCase().replace(/\s+/g, '-') === menuName
-          )
-          
-          if (!menu || !menu.is_listed) {
-            setError('Menu not found')
-            return
-          }
-
-          setMenuData({
-            restaurantName,
-            menuName: menuName?.replace(/-/g, ' '),
-            items: menu.categories.flatMap(category => 
-              category.items.map(item => ({
-                ...item,
-                price: item.price
-              }))
-            )
-          })
+        if (!restaurantId) {
+          setError('Selected restaurant has no document ID')
+          return
         }
+
+        let menuResponse
+        try {
+          menuResponse = await databases.listDocuments(
+            databaseId,
+            menuCollectionId,
+            [Query.equal('restaurant_id', [restaurantId])]
+          )
+        } catch (relationshipError) {
+          console.warn(
+            'restaurant_id query failed; retrying with relationship field',
+            relationshipError
+          )
+          menuResponse = await databases.listDocuments(
+            databaseId,
+            menuCollectionId,
+            [Query.equal('restaurant', [restaurantId])]
+          )
+        }
+
+        const menuDocuments = menuResponse.documents as AppwriteDocument[]
+        const menuItems = menuDocuments
+          .map(document => normalizeAppwriteMenu(document))
+          .filter((menu): menu is Menu => Boolean(menu))
+          .flatMap(menu => menu.categories.flatMap(category => category.items))
+
+        if (menuItems.length === 0) {
+          setError('No menu items are available for this restaurant')
+          return
+        }
+
+        const restaurantName = String(
+          restaurant.name || restaurant.subdomain || 'Restaurant'
+        )
+
+        setMenuData({
+          restaurantName,
+          menuName: menuName?.replace(/-/g, ' ') || 'Menu',
+          items: menuItems,
+        })
       } catch (err) {
         console.error('Failed to load menu data from Appwrite', err)
         setError(err instanceof Error ? err.message : 'Failed to load menu data')
