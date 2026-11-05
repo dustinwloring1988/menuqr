@@ -4398,7 +4398,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">Loading menu...</div>
+        <p className="text-center">Loading menu...</p>
       </div>
     )
   }
