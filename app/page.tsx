@@ -4197,6 +4197,11 @@ interface MenuItem {
   updated_at: string;
 }
 
+interface CartItem {
+  item: MenuItem;
+  quantity: number;
+}
+
 interface Category {
   id: string;
   name: string;
@@ -4313,8 +4318,9 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
   const [menuData, setMenuData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
-  const [isItemModalOpen, setIsItemModalOpen] = useState(false)
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [isOrderOpen, setIsOrderOpen] = useState(false)
+  const [tableNumber, setTableNumber] = useState('')
   const [isTermsOpen, setIsTermsOpen] = useState(false)
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('All')
@@ -4402,9 +4408,52 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
     fetchMenuData()
   }, [restaurantSubdomain, menuName])
 
-  const handleItemClick = (item: MenuItem) => {
-    setSelectedItem(item)
-    setIsItemModalOpen(true)
+  const addToCart = (item: MenuItem) => {
+    setCart(currentCart => {
+      const existing = currentCart.find(entry => entry.item.id === item.id)
+      if (existing) {
+        return currentCart.map(entry =>
+          entry.item.id === item.id
+            ? { ...entry, quantity: entry.quantity + 1 }
+            : entry
+        )
+      }
+      return [...currentCart, { item, quantity: 1 }]
+    })
+  }
+
+  const updateCartQuantity = (itemId: string, change: number) => {
+    setCart(currentCart =>
+      currentCart
+        .map(entry =>
+          entry.item.id === itemId
+            ? { ...entry, quantity: entry.quantity + change }
+            : entry
+        )
+        .filter(entry => entry.quantity > 0)
+    )
+  }
+
+  const cartItemCount = cart.reduce((total, entry) => total + entry.quantity, 0)
+  const cartTotal = cart.reduce(
+    (total, entry) => total + (Number.parseFloat(entry.item.price) || 0) * entry.quantity,
+    0
+  )
+
+  const sendOrderViaWhatsApp = () => {
+    const table = tableNumber.trim() || 'Not specified'
+    const orderLines = cart.map(entry =>
+      `${entry.quantity} x ${entry.item.name} - ${(Number.parseFloat(entry.item.price) * entry.quantity || 0).toFixed(2)}`
+    )
+    const message = [
+      `Dine-in order for ${menuData?.restaurantName || 'restaurant'}`,
+      `Table: ${table}`,
+      '',
+      ...orderLines,
+      '',
+      `Total: $${cartTotal.toFixed(2)}`,
+    ].join('\n')
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')
   }
 
   const menuItems = (menuData?.items || []) as MenuItem[]
@@ -4524,7 +4573,6 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
               <Card 
                 key={item.id || index}
                 className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
-                onClick={() => handleItemClick(item)}
               >
                 {item.image_url ? (
                   <div className="h-48 w-full">
@@ -4552,10 +4600,14 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
                       disabled={item.is_available === false}
                       onClick={event => {
                         event.stopPropagation()
-                        handleItemClick(item)
+                        addToCart(item)
                       }}
                     >
-                      {item.is_available === false ? 'Unavailable' : 'Add'}
+                      {item.is_available === false
+                        ? 'Unavailable'
+                        : cart.find(entry => entry.item.id === item.id)
+                          ? `Added (${cart.find(entry => entry.item.id === item.id)?.quantity})`
+                          : 'Add'}
                     </Button>
                   </div>
                 </CardContent>
@@ -4568,63 +4620,88 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
             )}
           </div>
 
-          <Dialog open={isItemModalOpen} onOpenChange={setIsItemModalOpen}>
-            <DialogContent className="sm:max-w-[600px]">
-              {selectedItem && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle className="flex justify-between items-center">
-                      {selectedItem.name}
-                      <span className="text-xl font-bold">{selectedItem.price}</span>
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="grid gap-4">
-                    {selectedItem.image_url && (
-                      <div className="w-full h-48 relative">
-                        <img
-                          src={selectedItem.image_url}
-                          alt={selectedItem.name}
-                          className="w-full h-full object-cover rounded-md"
-                        />
-                      </div>
-                    )}
-                    <div>
-                      <h4 className="font-semibold mb-2">Description</h4>
-                      <p className="text-gray-600">{selectedItem.description}</p>
-                    </div>
-                    {selectedItem.ingredients && (
-                      <div>
-                        <h4 className="font-semibold mb-2">Ingredients</h4>
-                        <p className="text-gray-600">{selectedItem.ingredients.join(', ')}</p>
-                      </div>
-                    )}
-                    {selectedItem.allergens && (
-                      <div>
-                        <h4 className="font-semibold mb-2">Allergens</h4>
-                        <div className="flex gap-2">
-                          {selectedItem.allergens.map((allergen, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-sm"
-                            >
-                              {allergen}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {selectedItem.calories && (
-                      <div>
-                        <h4 className="font-semibold mb-2">Nutritional Information</h4>
-                        <p className="text-gray-600">{selectedItem.calories} calories</p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </DialogContent>
-          </Dialog>
         </div>
+
+        {cart.length > 0 && (
+          <div className="sticky bottom-4 z-20 mx-auto flex w-full max-w-3xl items-center justify-between gap-4 rounded-xl bg-gray-900 px-4 py-3 text-white shadow-xl">
+            <div>
+              <p className="font-semibold">{cartItemCount} item{cartItemCount === 1 ? '' : 's'}</p>
+              <p className="text-sm text-gray-300">${cartTotal.toFixed(2)}</p>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsOrderOpen(true)}
+            >
+              Review Order
+            </Button>
+          </div>
+        )}
+
+        <Dialog open={isOrderOpen} onOpenChange={setIsOrderOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Review your order</DialogTitle>
+              <DialogDescription>
+                Choose quantities and provide your table number for dine-in service.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="table-number">Table number</Label>
+                <Input
+                  id="table-number"
+                  placeholder="Table 4"
+                  value={tableNumber}
+                  onChange={event => setTableNumber(event.target.value)}
+                />
+              </div>
+              <div className="divide-y rounded-lg border">
+                {cart.map(entry => (
+                  <div key={entry.item.id} className="flex items-center justify-between gap-3 p-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{entry.item.name}</p>
+                      <p className="text-sm text-gray-500">
+                        ${(Number.parseFloat(entry.item.price) || 0).toFixed(2)} each
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateCartQuantity(entry.item.id, -1)}
+                      >
+                        -
+                      </Button>
+                      <span className="w-6 text-center">{entry.quantity}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateCartQuantity(entry.item.id, 1)}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between border-t pt-4 font-semibold">
+                <span>Total</span>
+                <span>${cartTotal.toFixed(2)}</span>
+              </div>
+              <Button
+                type="button"
+                className="w-full"
+                disabled={cart.length === 0}
+                onClick={sendOrderViaWhatsApp}
+              >
+                Send Order via WhatsApp
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
           <p className="text-xs text-gray-500">© 2024 Menu QRs. All rights reserved.</p>
