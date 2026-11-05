@@ -15,12 +15,12 @@ import { Bar, Pie } from 'react-chartjs-2';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ChevronDown, Menu, Plus, Minus, Trash2, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check, Clock, Eye, RotateCw, LineChart, Languages, FolderTree, Filter, Search } from 'lucide-react'
+import { ChevronDown, Menu, Plus, Minus, Trash2, Loader2, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check, Clock, Eye, RotateCw, LineChart, Languages, FolderTree, Filter, Search } from 'lucide-react'
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { databases, getAppwriteConfig } from '@/lib/appwrite'
-import { Query } from 'appwrite'
+import { ID, Query } from 'appwrite'
 
 // Register Chart.js components
 ChartJS.register(ArcElement, ChartTooltip, Legend, CategoryScale, LinearScale, BarElement);
@@ -4322,6 +4322,9 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
   const [cart, setCart] = useState<CartItem[]>([])
   const [isOrderOpen, setIsOrderOpen] = useState(false)
   const [orderError, setOrderError] = useState<string | null>(null)
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
+  const [orderConfirmation, setOrderConfirmation] = useState<string | null>(null)
+  const [restaurantId, setRestaurantId] = useState<string | null>(null)
   const [isTermsOpen, setIsTermsOpen] = useState(false)
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('All')
@@ -4356,6 +4359,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           databaseId,
           restaurantsCollectionId,
           menuCollectionId,
+          ordersCollectionId,
         } = getAppwriteConfig()
         const restaurantRes = await databases.listDocuments(
           databaseId,
@@ -4376,6 +4380,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           setError('Selected restaurant has no document ID')
           return
         }
+        setRestaurantId(restaurantId)
 
         const menuRes = await databases.listDocuments(
           databaseId,
@@ -4470,32 +4475,45 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
 
   const submitOrder = async () => {
     setOrderError(null)
+    setIsSubmittingOrder(true)
     try {
-      const response = await fetch('/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          restaurantName: menuData?.restaurantName || 'Restaurant',
-          tableNumber,
-          items: cart.map(entry => ({
-            id: entry.item.id,
-            name: entry.item.name,
-            quantity: entry.quantity,
-            price: Number.parseFloat(entry.item.price) || 0,
-          })),
-          total: cartTotal,
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('The order could not be submitted. Please try again.')
+      if (!restaurantId) {
+        throw new Error('Restaurant information is not available. Please reload the menu.')
       }
+
+      const { databaseId, ordersCollectionId } = getAppwriteConfig()
+      const items = cart.map(entry => ({
+        name: entry.item.name,
+        quantity: entry.quantity,
+        price: Number.parseFloat(entry.item.price) || 0,
+      }))
+      await databases.createDocument(
+        databaseId,
+        ordersCollectionId,
+        ID.unique(),
+        {
+          restaurant_id: restaurantId,
+          table_number: hasTableContext ? tableNumber : '',
+          items: JSON.stringify(items),
+          total_price: cartTotal,
+          status: 'pending',
+        }
+      )
 
       setCart([])
       setIsOrderOpen(false)
+      setOrderConfirmation(
+        `Order Sent to Kitchen! Your order for ${tableNumber} has been placed.`
+      )
     } catch (err) {
-      console.error('Failed to submit dine-in order', err)
-      setOrderError(err instanceof Error ? err.message : 'Failed to submit order')
+      console.error('Failed to submit dine-in order to Appwrite', err)
+      setOrderError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to send your order. Please try again.'
+      )
+    } finally {
+      setIsSubmittingOrder(false)
     }
   }
 
@@ -4765,15 +4783,41 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
               <Button
                 type="button"
                 className="w-full"
-                disabled={cart.length === 0}
+                disabled={cart.length === 0 || isSubmittingOrder}
                 onClick={hasTableContext ? submitOrder : sendOrderViaWhatsApp}
               >
-                {hasTableContext ? 'Submit Order' : 'Send Order via WhatsApp'}
+                {hasTableContext
+                  ? isSubmittingOrder
+                    ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    )
+                    : 'Submit Order'
+                  : 'Send Order via WhatsApp'}
               </Button>
               {orderError && (
                 <p className="text-sm text-red-600">{orderError}</p>
               )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={Boolean(orderConfirmation)}
+          onOpenChange={open => {
+            if (!open) setOrderConfirmation(null)
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Order confirmed</DialogTitle>
+              <DialogDescription>{orderConfirmation}</DialogDescription>
+            </DialogHeader>
+            <Button type="button" onClick={() => setOrderConfirmation(null)}>
+              Place Another Order
+            </Button>
           </DialogContent>
         </Dialog>
 

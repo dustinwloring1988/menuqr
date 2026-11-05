@@ -8,6 +8,8 @@ const restaurantsCollectionId =
   process.env.NEXT_PUBLIC_APPWRITE_RESTAURANTS_COLLECTION_ID;
 const menuCollectionId =
   process.env.NEXT_PUBLIC_APPWRITE_MENU_COLLECTION_ID;
+const ordersCollectionId =
+  process.env.NEXT_PUBLIC_APPWRITE_ORDERS_COLLECTION_ID;
 
 const client = new Client();
 if (endpoint && projectId) {
@@ -18,19 +20,22 @@ export function getAppwriteConfig() {
   const resolvedRestaurantsCollectionId =
     restaurantsCollectionId || collectionId;
   const resolvedMenuCollectionId = menuCollectionId || collectionId;
+  const resolvedOrdersCollectionId = ordersCollectionId || collectionId;
 
   if (
     !endpoint ||
     !projectId ||
     !databaseId ||
     !resolvedRestaurantsCollectionId ||
-    !resolvedMenuCollectionId
+    !resolvedMenuCollectionId ||
+    !resolvedOrdersCollectionId
   ) {
     throw new Error(
       'Missing Appwrite configuration. Set NEXT_PUBLIC_APPWRITE_ENDPOINT, ' +
         'NEXT_PUBLIC_APPWRITE_PROJECT, NEXT_PUBLIC_APPWRITE_DATABASE_ID, ' +
         'NEXT_PUBLIC_APPWRITE_RESTAURANTS_COLLECTION_ID, and ' +
-        'NEXT_PUBLIC_APPWRITE_MENU_COLLECTION_ID.'
+        'NEXT_PUBLIC_APPWRITE_MENU_COLLECTION_ID, and ' +
+        'NEXT_PUBLIC_APPWRITE_ORDERS_COLLECTION_ID.'
     );
   }
 
@@ -38,6 +43,7 @@ export function getAppwriteConfig() {
     databaseId,
     restaurantsCollectionId: resolvedRestaurantsCollectionId,
     menuCollectionId: resolvedMenuCollectionId,
+    ordersCollectionId: resolvedOrdersCollectionId,
   };
 }
 
