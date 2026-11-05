@@ -4314,17 +4314,24 @@ function normalizeAppwriteMenu(document: AppwriteDocument): Menu | null {
 }
 
 function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string | null }) {
-  const { menuName } = useParams()
+  const { menuName, tableNumber: pathTableNumber } = useParams()
+  const location = useLocation()
   const [menuData, setMenuData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const [isOrderOpen, setIsOrderOpen] = useState(false)
-  const [tableNumber, setTableNumber] = useState('')
   const [isTermsOpen, setIsTermsOpen] = useState(false)
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('All')
   const navigate = useNavigate()
+  const queryTableNumber = new URLSearchParams(location.search).get('table')
+  const rawTableNumber = pathTableNumber || queryTableNumber
+  const tableNumber = rawTableNumber?.trim()
+    ? rawTableNumber.trim().toLowerCase().startsWith('table')
+      ? rawTableNumber.trim()
+      : `Table ${rawTableNumber.trim()}`
+    : 'Table 1'
 
   useEffect(() => {
     const fetchMenuData = async () => {
@@ -4441,19 +4448,21 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
   )
 
   const sendOrderViaWhatsApp = () => {
-    const table = tableNumber.trim() || 'Not specified'
     const orderLines = cart.map(entry =>
-      `${entry.quantity} x ${entry.item.name} - ${(Number.parseFloat(entry.item.price) * entry.quantity || 0).toFixed(2)}`
+      `${entry.quantity} x ${entry.item.name} - $${(Number.parseFloat(entry.item.price) * entry.quantity || 0).toFixed(2)}`
     )
     const message = [
       `Dine-in order for ${menuData?.restaurantName || 'restaurant'}`,
-      `Table: ${table}`,
+      `Table: ${tableNumber}`,
       '',
       ...orderLines,
       '',
       `Total: $${cartTotal.toFixed(2)}`,
     ].join('\n')
-    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank')
+    window.open(
+      `https://wa.me/201130615489?text=${encodeURIComponent(message)}`,
+      '_blank'
+    )
   }
 
   const menuItems = (menuData?.items || []) as MenuItem[]
@@ -4643,18 +4652,15 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
             <DialogHeader>
               <DialogTitle>Review your order</DialogTitle>
               <DialogDescription>
-                Choose quantities and provide your table number for dine-in service.
+                Confirm your table and selected dishes before sending the order.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="table-number">Table number</Label>
-                <Input
-                  id="table-number"
-                  placeholder="Table 4"
-                  value={tableNumber}
-                  onChange={event => setTableNumber(event.target.value)}
-                />
+                <Label>Table number</Label>
+                <div className="rounded-md border bg-gray-50 px-3 py-2 font-medium">
+                  {tableNumber}
+                </div>
               </div>
               <div className="divide-y rounded-lg border">
                 {cart.map(entry => (
@@ -4941,16 +4947,28 @@ export default function App() {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
   const isSubdomain = hostname.split('.').length > 2
   const restaurantSubdomain = isSubdomain ? hostname.split('.')[0] : null
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
+  const hasTableQuery = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('table')
+  const isPublicMenuRoute = isSubdomain || pathname.startsWith('/table/') || hasTableQuery
 
   if (!isClient) {
     return null
   }
 
   // If accessing via subdomain, show the menu view
-  if (isSubdomain) {
+  if (isPublicMenuRoute) {
     return (
       <BrowserRouter>
         <Routes>
+          <Route
+            path="/table/:tableNumber"
+            element={
+              <PublicMenuView
+                restaurantSubdomain={restaurantSubdomain}
+              />
+            }
+          />
           <Route 
             path="/:menuName" 
             element={
