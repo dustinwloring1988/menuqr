@@ -4331,27 +4331,18 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           restaurantsCollectionId,
           menuCollectionId,
         } = getAppwriteConfig()
-        let restaurantsResponse = await databases.listDocuments(
+        const restaurantRes = await databases.listDocuments(
           databaseId,
           restaurantsCollectionId,
           [Query.equal('subdomain', targetSubdomain)]
         )
-        let restaurants = restaurantsResponse.documents as AppwriteDocument[]
 
-        if (restaurants.length === 0) {
-          restaurantsResponse = await databases.listDocuments(
-            databaseId,
-            restaurantsCollectionId
-          )
-          restaurants = restaurantsResponse.documents as AppwriteDocument[]
-        }
-
-        if (restaurants.length === 0) {
-          setError('No restaurants are available')
+        const restaurant = (restaurantRes.documents as AppwriteDocument[])[0]
+        if (!restaurant) {
+          setError(`No restaurant found for subdomain "${targetSubdomain}"`)
           return
         }
 
-        const restaurant = restaurants[0]
         console.log('Matched Restaurant:', restaurant)
         const restaurantId = restaurant.$id
 
@@ -4360,15 +4351,15 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           return
         }
 
-        const response = await databases.listDocuments(
+        const menuRes = await databases.listDocuments(
           databaseId,
           menuCollectionId,
           [Query.equal('restaurant_id', restaurantId)]
         )
 
-        console.log('Fetched Menu Items:', response.documents)
+        console.log('Fetched Menu Items:', menuRes.documents)
 
-        const menuDocuments = response.documents as AppwriteDocument[]
+        const menuDocuments = menuRes.documents as AppwriteDocument[]
         const menuItems = menuDocuments
           .map(document => normalizeAppwriteMenu(document))
           .filter((menu): menu is Menu => Boolean(menu))
