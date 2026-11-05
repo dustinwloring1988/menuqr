@@ -19,6 +19,7 @@ import { ChevronDown, Menu, Plus, QrCode, Settings, Users, X, Smartphone, Tablet
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { databases, getAppwriteConfig } from '@/lib/appwrite'
 
 // Register Chart.js components
 ChartJS.register(ArcElement, ChartTooltip, Legend, CategoryScale, LinearScale, BarElement);
@@ -4220,6 +4221,56 @@ interface Menu {
   organization_id: string;
 }
 
+function normalizeAppwriteMenu(document: Record<string, any>): Menu | null {
+  const menu = document.menu && typeof document.menu === 'object'
+    ? { ...document.menu, id: document.menu.id || document.$id }
+    : document
+  const categories = Array.isArray(menu.categories) ? menu.categories : []
+
+  if (!menu.name || !Array.isArray(menu.categories)) {
+    return null
+  }
+
+  return {
+    id: String(menu.id || document.$id),
+    name: String(menu.name),
+    description: menu.description || undefined,
+    image_url: menu.image_url || undefined,
+    is_listed: menu.is_listed !== false,
+    start_time: menu.start_time || undefined,
+    end_time: menu.end_time || undefined,
+    available_days: Array.isArray(menu.available_days) ? menu.available_days : [],
+    layout: menu.layout === 'list' || menu.layout === 'compact' ? menu.layout : 'grid',
+    categories: categories.map((category: any) => ({
+      id: String(category.id || category.$id || `${menu.id}-category-${category.name}`),
+      name: String(category.name || 'Category'),
+      description: category.description || undefined,
+      display_order: Number(category.display_order || 0),
+      items: Array.isArray(category.items)
+        ? category.items.map((item: any, index: number) => ({
+            id: String(item.id || item.$id || `${category.id}-item-${index}`),
+            name: String(item.name || 'Unnamed item'),
+            description: item.description || '',
+            price: String(item.price ?? ''),
+            image_url: item.image_url || undefined,
+            ingredients: Array.isArray(item.ingredients) ? item.ingredients : undefined,
+            allergens: Array.isArray(item.allergens) ? item.allergens : undefined,
+            calories: typeof item.calories === 'number' ? item.calories : undefined,
+            display_order: Number(item.display_order || index),
+            is_available: item.is_available !== false,
+            created_at: item.created_at || new Date().toISOString(),
+            updated_at: item.updated_at || new Date().toISOString(),
+          }))
+        : [],
+      created_at: category.created_at || new Date().toISOString(),
+      updated_at: category.updated_at || new Date().toISOString(),
+    })),
+    created_at: menu.created_at || document.$createdAt || new Date().toISOString(),
+    updated_at: menu.updated_at || document.$updatedAt || new Date().toISOString(),
+    organization_id: String(menu.organization_id || document.organization_id || ''),
+  }
+}
+
 function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string | null }) {
   const { menuName } = useParams()
   const [menuData, setMenuData] = useState<any>(null)
@@ -4233,16 +4284,31 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
 
   useEffect(() => {
     const fetchMenuData = async () => {
+      setLoading(true)
+      setError(null)
+
       try {
         console.log(`Fetching menu data for restaurant: ${restaurantSubdomain}, menu: ${menuName}`)
-        
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // Get the restaurant's menus
-        const restaurantMenus = mockMenusByRestaurant[restaurantSubdomain as keyof typeof mockMenusByRestaurant]
-        
-        if (!restaurantMenus) {
-          setError('Restaurant not found')
+
+        if (!restaurantSubdomain) {
+          throw new Error('Restaurant subdomain is missing from the menu URL')
+        }
+
+        const { databaseId, collectionId } = getAppwriteConfig()
+        const response = await databases.listDocuments(databaseId, collectionId)
+        const restaurantMenus = response.documents
+          .filter(document => {
+            const subdomain = document.subdomain ||
+              document.restaurant_subdomain ||
+              document.organization_subdomain ||
+              document.organization?.subdomain
+            return !subdomain || subdomain === restaurantSubdomain
+          })
+          .map(document => normalizeAppwriteMenu(document))
+          .filter(menu => menu !== null)
+
+        if (restaurantMenus.length === 0) {
+          setError('Restaurant not found or has no published menus')
           return
         }
 
@@ -4259,7 +4325,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
             }))
 
           setMenuData({
-            restaurantName: restaurantSubdomain?.replace(/-/g, ' '),
+            restaurantName: restaurantSubdomain.replace(/-/g, ' '),
             availableMenus: listedMenus
           })
         } else {
@@ -4274,7 +4340,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           }
 
           setMenuData({
-            restaurantName: restaurantSubdomain?.replace(/-/g, ' '),
+            restaurantName: restaurantSubdomain.replace(/-/g, ' '),
             menuName: menuName?.replace(/-/g, ' '),
             items: menu.categories.flatMap(category => 
               category.items.map(item => ({
@@ -4284,9 +4350,10 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
             )
           })
         }
-        setLoading(false)
       } catch (err) {
-        setError('Failed to load menu data')
+        console.error('Failed to load menu data from Appwrite', err)
+        setError(err instanceof Error ? err.message : 'Failed to load menu data')
+      } finally {
         setLoading(false)
       }
     }
