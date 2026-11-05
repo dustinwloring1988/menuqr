@@ -4184,6 +4184,7 @@ function SettingsContent() {
 interface MenuItem {
   id: string;
   name: string;
+  category?: string;
   description: string;
   price: string;
   image_url?: string;
@@ -4277,6 +4278,15 @@ function normalizeAppwriteMenu(document: AppwriteDocument): Menu | null {
         ? category.items.map((item: any, index: number) => ({
             id: String(item.id || item.$id || `${category.id}-item-${index}`),
             name: String(item.name || 'Unnamed item'),
+            category: String(
+              (typeof item.category === 'object'
+                ? item.category?.name
+                : item.category) ||
+              item.category_name ||
+              item.categoryName ||
+              category.name ||
+              'Other'
+            ),
             description: item.description || '',
             price: String(item.price ?? ''),
             image_url: item.image_url || undefined,
@@ -4307,6 +4317,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
   const [isItemModalOpen, setIsItemModalOpen] = useState(false)
   const [isTermsOpen, setIsTermsOpen] = useState(false)
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState('All')
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -4379,6 +4390,7 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           menuName: menuName?.replace(/-/g, ' ') || 'Menu',
           items: menuItems,
         })
+        setSelectedCategory('All')
       } catch (err) {
         console.error('Failed to load menu data from Appwrite', err)
         setError(err instanceof Error ? err.message : 'Failed to load menu data')
@@ -4394,6 +4406,17 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
     setSelectedItem(item)
     setIsItemModalOpen(true)
   }
+
+  const menuItems = (menuData?.items || []) as MenuItem[]
+  const categories = [
+    'All',
+    ...Array.from(
+      new Set(menuItems.map(item => item.category || 'Other'))
+    ),
+  ]
+  const visibleItems = selectedCategory === 'All'
+    ? menuItems
+    : menuItems.filter(item => (item.category || 'Other') === selectedCategory)
 
   if (loading) {
     return (
@@ -4480,42 +4503,67 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
         <div className="container mx-auto px-4 py-8 flex-grow">
           <h1 className="text-3xl font-bold mb-2 capitalize">{menuData?.restaurantName}</h1>
           <h2 className="text-xl text-gray-600 mb-6 capitalize">{menuData?.menuName}</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            {menuData?.items?.map((item: MenuItem, index: number) => (
+          <div className="mb-8 flex gap-2 overflow-x-auto border-b pb-3">
+            {categories.map(category => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  selectedCategory === category
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleItems.map((item, index) => (
               <Card 
-                key={index} 
+                key={item.id || index}
                 className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
                 onClick={() => handleItemClick(item)}
               >
+                {item.image_url ? (
+                  <div className="h-48 w-full">
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-48 w-full items-center justify-center bg-gray-100">
+                    <span className="text-sm text-gray-400">No image</span>
+                  </div>
+                )}
                 <CardContent className="p-4">
-                  <div className="flex gap-4">
-                    {item.image_url ? (
-                      <div className="w-24 h-24 flex-shrink-0">
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-full h-full object-cover rounded-md"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-24 h-24 bg-gray-100 flex items-center justify-center rounded-md flex-shrink-0">
-                        <span className="text-gray-400 text-sm">No image</span>
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-lg font-semibold">{item.name}</h3>
-                        <span className="text-lg">{item.price}</span>
-                      </div>
-                      <p className="text-gray-600 line-clamp-2">{item.description}</p>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-lg font-semibold">{item.name}</h3>
+                      <span className="shrink-0 text-lg font-medium">{item.price}</span>
                     </div>
+                    <p className="line-clamp-2 text-gray-600">{item.description}</p>
+                    <Button
+                      type="button"
+                      className="w-full"
+                      disabled={item.is_available === false}
+                      onClick={event => {
+                        event.stopPropagation()
+                        handleItemClick(item)
+                      }}
+                    >
+                      {item.is_available === false ? 'Unavailable' : 'Add'}
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
-            {menuData?.items?.length === 0 && (
-              <div className="text-center text-gray-500 col-span-2">
-                No items available in this menu
+            {visibleItems.length === 0 && (
+              <div className="col-span-full text-center text-gray-500">
+                No items available in this category
               </div>
             )}
           </div>
