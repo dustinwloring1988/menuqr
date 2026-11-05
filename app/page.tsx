@@ -15,10 +15,12 @@ import { Bar, Pie } from 'react-chartjs-2';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { ChevronDown, Menu, Plus, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check, Clock, Eye, RotateCw, LineChart, Languages, FolderTree, Filter, Search } from 'lucide-react'
+import { ChevronDown, Menu, Plus, Minus, Trash2, Loader2, QrCode, Settings, Users, X, Smartphone, Tablet, Monitor, Check, Clock, Eye, RotateCw, LineChart, Languages, FolderTree, Filter, Search } from 'lucide-react'
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { databases, getAppwriteConfig } from '@/lib/appwrite'
+import { ID, Query } from 'appwrite'
 
 // Register Chart.js components
 ChartJS.register(ArcElement, ChartTooltip, Legend, CategoryScale, LinearScale, BarElement);
@@ -4182,6 +4184,7 @@ function SettingsContent() {
 interface MenuItem {
   id: string;
   name: string;
+  category?: string;
   description: string;
   price: string;
   image_url?: string;
@@ -4192,6 +4195,11 @@ interface MenuItem {
   is_available: boolean;
   created_at: string;
   updated_at: string;
+}
+
+interface CartItem {
+  item: MenuItem;
+  quantity: number;
 }
 
 interface Category {
@@ -4218,75 +4226,195 @@ interface Menu {
   created_at: string;
   updated_at: string;
   organization_id: string;
+  isPublished?: boolean;
+  organizationSubdomain?: string;
+}
+
+type AppwriteDocument = Record<string, any> & {
+  $id?: string;
+  $createdAt?: string;
+  $updatedAt?: string;
+}
+
+function normalizeAppwriteMenu(document: AppwriteDocument): Menu | null {
+  const menu = document.menu && typeof document.menu === 'object'
+    ? { ...document.menu, id: document.menu.id || document.$id }
+    : document
+  const categories = Array.isArray(menu.categories)
+    ? menu.categories
+    : menu.name
+      ? [{
+          id: `${menu.id || document.$id || menu.name}-category`,
+          name: menu.category_name || 'Menu',
+          items: [menu],
+        }]
+      : []
+
+  if (!menu.name) {
+    return null
+  }
+
+  return {
+    id: String(menu.id || document.$id),
+    name: String(menu.name),
+    description: menu.description || undefined,
+    image_url: menu.image_url || undefined,
+    is_listed: menu.is_listed !== false,
+    isPublished: menu.isPublished ?? menu.is_published ?? menu.is_listed !== false,
+    organizationSubdomain:
+      menu.organizationSubdomain ||
+      menu.organization_subdomain ||
+      menu.subdomain ||
+      menu.organization?.subdomain ||
+      document.organizationSubdomain ||
+      document.organization_subdomain ||
+      document.subdomain ||
+      document.organization?.subdomain,
+    start_time: menu.start_time || undefined,
+    end_time: menu.end_time || undefined,
+    available_days: Array.isArray(menu.available_days) ? menu.available_days : [],
+    layout: menu.layout === 'list' || menu.layout === 'compact' ? menu.layout : 'grid',
+    categories: categories.map((category: any) => ({
+      id: String(category.id || category.$id || `${menu.id}-category-${category.name}`),
+      name: String(category.name || 'Category'),
+      description: category.description || undefined,
+      display_order: Number(category.display_order || 0),
+      items: Array.isArray(category.items)
+        ? category.items.map((item: any, index: number) => ({
+            id: String(item.id || item.$id || `${category.id}-item-${index}`),
+            name: String(item.name || 'Unnamed item'),
+            category: String(
+              (typeof item.category === 'object'
+                ? item.category?.name
+                : item.category) ||
+              item.category_name ||
+              item.categoryName ||
+              category.name ||
+              'Other'
+            ),
+            description: item.description || '',
+            price: String(item.price ?? ''),
+            image_url: item.image_url || undefined,
+            ingredients: Array.isArray(item.ingredients) ? item.ingredients : undefined,
+            allergens: Array.isArray(item.allergens) ? item.allergens : undefined,
+            calories: typeof item.calories === 'number' ? item.calories : undefined,
+            display_order: Number(item.display_order || index),
+            is_available: item.is_available !== false,
+            created_at: item.created_at || new Date().toISOString(),
+            updated_at: item.updated_at || new Date().toISOString(),
+          }))
+        : [],
+      created_at: category.created_at || new Date().toISOString(),
+      updated_at: category.updated_at || new Date().toISOString(),
+    })),
+    created_at: menu.created_at || document.$createdAt || new Date().toISOString(),
+    updated_at: menu.updated_at || document.$updatedAt || new Date().toISOString(),
+    organization_id: String(menu.organization_id || document.organization_id || ''),
+  }
 }
 
 function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string | null }) {
-  const { menuName } = useParams()
+  const { menuName, tableNumber: pathTableNumber } = useParams()
+  const location = useLocation()
   const [menuData, setMenuData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
-  const [isItemModalOpen, setIsItemModalOpen] = useState(false)
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [isOrderOpen, setIsOrderOpen] = useState(false)
+  const [orderError, setOrderError] = useState<string | null>(null)
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false)
+  const [orderConfirmation, setOrderConfirmation] = useState<string | null>(null)
+  const [restaurantId, setRestaurantId] = useState<string | null>(null)
   const [isTermsOpen, setIsTermsOpen] = useState(false)
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState('All')
   const navigate = useNavigate()
+  const queryTableNumber = new URLSearchParams(location.search).get('table')
+  const rawTableNumber = pathTableNumber || queryTableNumber
+  const hasTableContext = Boolean(rawTableNumber?.trim())
+  const tableNumber = rawTableNumber?.trim()
+    ? rawTableNumber.trim().toLowerCase().startsWith('table')
+      ? rawTableNumber.trim()
+      : `Table ${rawTableNumber.trim()}`
+    : 'Table 1'
 
   useEffect(() => {
     const fetchMenuData = async () => {
+      setLoading(true)
+      setError(null)
+
       try {
         console.log(`Fetching menu data for restaurant: ${restaurantSubdomain}, menu: ${menuName}`)
-        
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // Get the restaurant's menus
-        const restaurantMenus = mockMenusByRestaurant[restaurantSubdomain as keyof typeof mockMenusByRestaurant]
-        
-        if (!restaurantMenus) {
-          setError('Restaurant not found')
+
+        const hostname = typeof window !== 'undefined'
+          ? window.location.hostname
+          : ''
+        const targetSubdomain = hostname.includes('vercel.app') ||
+          hostname.includes('localhost')
+          ? 'burgerhouse'
+          : hostname.split('.')[0]
+        console.log('Target Subdomain:', targetSubdomain)
+
+        const {
+          databaseId,
+          restaurantsCollectionId,
+          menuCollectionId,
+          ordersCollectionId,
+        } = getAppwriteConfig()
+        const restaurantRes = await databases.listDocuments(
+          databaseId,
+          restaurantsCollectionId,
+          [Query.equal('subdomain', targetSubdomain)]
+        )
+
+        const restaurant = (restaurantRes.documents as AppwriteDocument[])[0]
+        if (!restaurant) {
+          setError(`No restaurant found for subdomain "${targetSubdomain}"`)
           return
         }
 
-        if (!menuName) {
-          // If no menu is specified, show only listed menus for this restaurant
-          const listedMenus = restaurantMenus
-            .filter(menu => menu.is_listed)
-            .map(menu => ({
-              name: menu.name,
-              description: menu.description,
-              path: menu.name.toLowerCase().replace(/\s+/g, '-'),
-              image: menu.image_url,
-              isListed: menu.is_listed
-            }))
+        console.log('Matched Restaurant:', restaurant)
+        const restaurantId = restaurant.$id
 
-          setMenuData({
-            restaurantName: restaurantSubdomain?.replace(/-/g, ' '),
-            availableMenus: listedMenus
-          })
-        } else {
-          // Show specific menu if it exists and is listed
-          const menu = restaurantMenus.find(m => 
-            m.name.toLowerCase().replace(/\s+/g, '-') === menuName
-          )
-          
-          if (!menu || !menu.is_listed) {
-            setError('Menu not found')
-            return
-          }
-
-          setMenuData({
-            restaurantName: restaurantSubdomain?.replace(/-/g, ' '),
-            menuName: menuName?.replace(/-/g, ' '),
-            items: menu.categories.flatMap(category => 
-              category.items.map(item => ({
-                ...item,
-                price: item.price
-              }))
-            )
-          })
+        if (!restaurantId) {
+          setError('Selected restaurant has no document ID')
+          return
         }
-        setLoading(false)
+        setRestaurantId(restaurantId)
+
+        const menuRes = await databases.listDocuments(
+          databaseId,
+          menuCollectionId,
+          [Query.equal('restaurant_id', restaurantId)]
+        )
+
+        console.log('Fetched Menu Items:', menuRes.documents)
+
+        const menuDocuments = menuRes.documents as AppwriteDocument[]
+        const menuItems = menuDocuments
+          .map(document => normalizeAppwriteMenu(document))
+          .filter((menu): menu is Menu => Boolean(menu))
+          .flatMap(menu => menu.categories.flatMap(category => category.items))
+
+        if (menuItems.length === 0) {
+          setError('No menu items are available for this restaurant')
+          return
+        }
+
+        const restaurantName = String(
+          restaurant.name || restaurant.subdomain || 'Restaurant'
+        )
+
+        setMenuData({
+          restaurantName,
+          menuName: menuName?.replace(/-/g, ' ') || 'Menu',
+          items: menuItems,
+        })
+        setSelectedCategory('All')
       } catch (err) {
-        setError('Failed to load menu data')
+        console.error('Failed to load menu data from Appwrite', err)
+        setError(err instanceof Error ? err.message : 'Failed to load menu data')
+      } finally {
         setLoading(false)
       }
     }
@@ -4294,15 +4422,116 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
     fetchMenuData()
   }, [restaurantSubdomain, menuName])
 
-  const handleItemClick = (item: MenuItem) => {
-    setSelectedItem(item)
-    setIsItemModalOpen(true)
+  const addToCart = (item: MenuItem) => {
+    setCart(currentCart => {
+      const existing = currentCart.find(entry => entry.item.id === item.id)
+      if (existing) {
+        return currentCart.map(entry =>
+          entry.item.id === item.id
+            ? { ...entry, quantity: entry.quantity + 1 }
+            : entry
+        )
+      }
+      return [...currentCart, { item, quantity: 1 }]
+    })
   }
+
+  const updateCartQuantity = (itemId: string, change: number) => {
+    setCart(currentCart =>
+      currentCart
+        .map(entry =>
+          entry.item.id === itemId
+            ? { ...entry, quantity: entry.quantity + change }
+            : entry
+        )
+        .filter(entry => entry.quantity > 0)
+    )
+  }
+
+  const cartItemCount = cart.reduce((total, entry) => total + entry.quantity, 0)
+  const cartTotal = cart.reduce(
+    (total, entry) => total + (Number.parseFloat(entry.item.price) || 0) * entry.quantity,
+    0
+  )
+
+  const sendOrderViaWhatsApp = () => {
+    const table = hasTableContext ? tableNumber : 'Not specified'
+    const orderLines = cart.map(entry =>
+      `${entry.quantity} x ${entry.item.name} - $${(Number.parseFloat(entry.item.price) * entry.quantity || 0).toFixed(2)}`
+    )
+    const message = [
+      `Order for ${menuData?.restaurantName || 'restaurant'}`,
+      `Table: ${table}`,
+      '',
+      ...orderLines,
+      '',
+      `Total: $${cartTotal.toFixed(2)}`,
+    ].join('\n')
+    window.open(
+      `https://wa.me/201130615489?text=${encodeURIComponent(message)}`,
+      '_blank'
+    )
+  }
+
+  const submitOrder = async () => {
+    setOrderError(null)
+    setIsSubmittingOrder(true)
+    try {
+      if (!restaurantId) {
+        throw new Error('Restaurant information is not available. Please reload the menu.')
+      }
+
+      const { databaseId, ordersCollectionId } = getAppwriteConfig()
+      const items = cart.map(entry => ({
+        name: entry.item.name,
+        quantity: entry.quantity,
+        price: Number.parseFloat(entry.item.price) || 0,
+      }))
+      await databases.createDocument(
+        databaseId,
+        ordersCollectionId,
+        ID.unique(),
+        {
+          restaurant_id: restaurantId,
+          table_number: hasTableContext ? tableNumber : '',
+          items: JSON.stringify(items),
+          total_price: cartTotal,
+          status: 'pending',
+        }
+      )
+
+      setCart([])
+      setIsOrderOpen(false)
+      setOrderConfirmation(
+        `Order Sent to Kitchen! Your order for ${tableNumber} has been placed.`
+      )
+    } catch (err) {
+      console.error('Failed to submit dine-in order to Appwrite', err)
+      setOrderError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to send your order. Please try again.'
+      )
+    } finally {
+      setIsSubmittingOrder(false)
+    }
+  }
+
+  const menuItems = (menuData?.items || []) as MenuItem[]
+  const categories = [
+    'All',
+    ...Array.from(
+      new Set(menuItems.map(item => item.category || 'Other'))
+    ),
+  ]
+  const visibleItems = selectedCategory === 'All'
+    ? menuItems
+    : menuItems.filter(item => (item.category || 'Other') === selectedCategory)
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">Loading menu...</div>
+        <p className="text-center">Loading menu...</p>
       </div>
     )
   }
@@ -4384,103 +4613,213 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
         <div className="container mx-auto px-4 py-8 flex-grow">
           <h1 className="text-3xl font-bold mb-2 capitalize">{menuData?.restaurantName}</h1>
           <h2 className="text-xl text-gray-600 mb-6 capitalize">{menuData?.menuName}</h2>
-          <div className="grid gap-6 md:grid-cols-2">
-            {menuData?.items?.map((item: MenuItem, index: number) => (
-              <Card 
-                key={index} 
-                className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
-                onClick={() => handleItemClick(item)}
+          {hasTableContext && (
+            <div className="mb-6 inline-flex rounded-full bg-green-100 px-4 py-2 text-sm font-semibold text-green-800">
+              {tableNumber} (Dine-In)
+            </div>
+          )}
+          <div className="mb-8 flex gap-2 overflow-x-auto border-b pb-3">
+            {categories.map(category => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setSelectedCategory(category)}
+                className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  selectedCategory === category
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
+                {category}
+              </button>
+            ))}
+          </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {visibleItems.map((item, index) => (
+              <Card 
+                key={item.id || index}
+                className="cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
+              >
+                {item.image_url ? (
+                  <div className="h-48 w-full">
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-48 w-full items-center justify-center bg-gray-100">
+                    <span className="text-sm text-gray-400">No image</span>
+                  </div>
+                )}
                 <CardContent className="p-4">
-                  <div className="flex gap-4">
-                    {item.image_url ? (
-                      <div className="w-24 h-24 flex-shrink-0">
-                        <img
-                          src={item.image_url}
-                          alt={item.name}
-                          className="w-full h-full object-cover rounded-md"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-24 h-24 bg-gray-100 flex items-center justify-center rounded-md flex-shrink-0">
-                        <span className="text-gray-400 text-sm">No image</span>
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-lg font-semibold">{item.name}</h3>
-                        <span className="text-lg">{item.price}</span>
-                      </div>
-                      <p className="text-gray-600 line-clamp-2">{item.description}</p>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-lg font-semibold">{item.name}</h3>
+                      <span className="shrink-0 text-lg font-medium">{item.price}</span>
                     </div>
+                    <p className="line-clamp-2 text-gray-600">{item.description}</p>
+                    {(() => {
+                      const quantity = cart.find(entry => entry.item.id === item.id)?.quantity || 0
+                      if (item.is_available === false) {
+                        return <Button type="button" className="w-full" disabled>Unavailable</Button>
+                      }
+                      if (quantity === 0) {
+                        return (
+                          <Button type="button" className="w-full" onClick={() => addToCart(item)}>
+                            Add
+                          </Button>
+                        )
+                      }
+                      return (
+                        <div className="flex items-center justify-between rounded-md border p-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Decrease ${item.name} quantity`}
+                            onClick={() => updateCartQuantity(item.id, -1)}
+                          >
+                            {quantity === 1 ? <Trash2 className="h-4 w-4" /> : <Minus className="h-4 w-4" />}
+                          </Button>
+                          <span className="font-semibold">{quantity}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label={`Increase ${item.name} quantity`}
+                            onClick={() => addToCart(item)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )
+                    })()}
                   </div>
                 </CardContent>
               </Card>
             ))}
-            {menuData?.items?.length === 0 && (
-              <div className="text-center text-gray-500 col-span-2">
-                No items available in this menu
+            {visibleItems.length === 0 && (
+              <div className="col-span-full text-center text-gray-500">
+                No items available in this category
               </div>
             )}
           </div>
 
-          <Dialog open={isItemModalOpen} onOpenChange={setIsItemModalOpen}>
-            <DialogContent className="sm:max-w-[600px]">
-              {selectedItem && (
-                <>
-                  <DialogHeader>
-                    <DialogTitle className="flex justify-between items-center">
-                      {selectedItem.name}
-                      <span className="text-xl font-bold">{selectedItem.price}</span>
-                    </DialogTitle>
-                  </DialogHeader>
-                  <div className="grid gap-4">
-                    {selectedItem.image_url && (
-                      <div className="w-full h-48 relative">
-                        <img
-                          src={selectedItem.image_url}
-                          alt={selectedItem.name}
-                          className="w-full h-full object-cover rounded-md"
-                        />
-                      </div>
-                    )}
-                    <div>
-                      <h4 className="font-semibold mb-2">Description</h4>
-                      <p className="text-gray-600">{selectedItem.description}</p>
-                    </div>
-                    {selectedItem.ingredients && (
-                      <div>
-                        <h4 className="font-semibold mb-2">Ingredients</h4>
-                        <p className="text-gray-600">{selectedItem.ingredients.join(', ')}</p>
-                      </div>
-                    )}
-                    {selectedItem.allergens && (
-                      <div>
-                        <h4 className="font-semibold mb-2">Allergens</h4>
-                        <div className="flex gap-2">
-                          {selectedItem.allergens.map((allergen, index) => (
-                            <span
-                              key={index}
-                              className="px-2 py-1 bg-red-100 text-red-800 rounded-md text-sm"
-                            >
-                              {allergen}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {selectedItem.calories && (
-                      <div>
-                        <h4 className="font-semibold mb-2">Nutritional Information</h4>
-                        <p className="text-gray-600">{selectedItem.calories} calories</p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </DialogContent>
-          </Dialog>
         </div>
+
+        {cart.length > 0 && (
+          <div className="sticky bottom-4 z-20 mx-auto flex w-full max-w-3xl items-center justify-between gap-4 rounded-xl bg-gray-900 px-4 py-3 text-white shadow-xl">
+            <div>
+              <p className="font-semibold">{cartItemCount} item{cartItemCount === 1 ? '' : 's'}</p>
+              <p className="text-sm text-gray-300">${cartTotal.toFixed(2)}</p>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsOrderOpen(true)}
+            >
+              Review Order
+            </Button>
+          </div>
+        )}
+
+        <Dialog open={isOrderOpen} onOpenChange={setIsOrderOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Review your order</DialogTitle>
+              <DialogDescription>
+                Confirm your table and selected dishes before sending the order.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {hasTableContext && (
+                <div className="rounded-md bg-green-50 px-3 py-2 text-sm font-semibold text-green-800">
+                  {tableNumber} (Dine-In)
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>Table number</Label>
+                <div className="rounded-md border bg-gray-50 px-3 py-2 font-medium">
+                  {hasTableContext ? tableNumber : 'No table selected'}
+                </div>
+              </div>
+              <div className="divide-y rounded-lg border">
+                {cart.map(entry => (
+                  <div key={entry.item.id} className="flex items-center justify-between gap-3 p-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{entry.item.name}</p>
+                      <p className="text-sm text-gray-500">
+                        ${(Number.parseFloat(entry.item.price) || 0).toFixed(2)} each
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateCartQuantity(entry.item.id, -1)}
+                      >
+                        -
+                      </Button>
+                      <span className="w-6 text-center">{entry.quantity}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateCartQuantity(entry.item.id, 1)}
+                      >
+                        +
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between border-t pt-4 font-semibold">
+                <span>Total</span>
+                <span>${cartTotal.toFixed(2)}</span>
+              </div>
+              <Button
+                type="button"
+                className="w-full"
+                disabled={cart.length === 0 || isSubmittingOrder}
+                onClick={hasTableContext ? submitOrder : sendOrderViaWhatsApp}
+              >
+                {hasTableContext
+                  ? isSubmittingOrder
+                    ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Submitting...
+                      </>
+                    )
+                    : 'Submit Order'
+                  : 'Send Order via WhatsApp'}
+              </Button>
+              {orderError && (
+                <p className="text-sm text-red-600">{orderError}</p>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={Boolean(orderConfirmation)}
+          onOpenChange={open => {
+            if (!open) setOrderConfirmation(null)
+          }}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Order confirmed</DialogTitle>
+              <DialogDescription>{orderConfirmation}</DialogDescription>
+            </DialogHeader>
+            <Button type="button" onClick={() => setOrderConfirmation(null)}>
+              Place Another Order
+            </Button>
+          </DialogContent>
+        </Dialog>
 
         <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
           <p className="text-xs text-gray-500">© 2024 Menu QRs. All rights reserved.</p>
@@ -4720,16 +5059,28 @@ export default function App() {
   const hostname = typeof window !== 'undefined' ? window.location.hostname : ''
   const isSubdomain = hostname.split('.').length > 2
   const restaurantSubdomain = isSubdomain ? hostname.split('.')[0] : null
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : ''
+  const hasTableQuery = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('table')
+  const isPublicMenuRoute = isSubdomain || pathname.startsWith('/table/') || hasTableQuery
 
   if (!isClient) {
     return null
   }
 
   // If accessing via subdomain, show the menu view
-  if (isSubdomain) {
+  if (isPublicMenuRoute) {
     return (
       <BrowserRouter>
         <Routes>
+          <Route
+            path="/table/:tableNumber"
+            element={
+              <PublicMenuView
+                restaurantSubdomain={restaurantSubdomain}
+              />
+            }
+          />
           <Route 
             path="/:menuName" 
             element={
