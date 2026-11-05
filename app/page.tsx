@@ -4353,24 +4353,11 @@ function PublicMenuView({ restaurantSubdomain }: { restaurantSubdomain: string |
           return
         }
 
-        let response
-        try {
-          response = await databases.listDocuments(
-            databaseId,
-            menuCollectionId,
-            [Query.equal('restaurant_id', restaurantId)]
-          )
-        } catch (relationshipError) {
-          console.warn(
-            'restaurant_id query failed; retrying with relationship field',
-            relationshipError
-          )
-          response = await databases.listDocuments(
-            databaseId,
-            menuCollectionId,
-            [Query.equal('restaurant', restaurantId)]
-          )
-        }
+        const response = await databases.listDocuments(
+          databaseId,
+          menuCollectionId,
+          [Query.equal('restaurant_id', [restaurantId])]
+        )
 
         console.log('Fetched restaurant ID:', restaurant.$id)
         console.log('Fetched menu items:', response.documents)
